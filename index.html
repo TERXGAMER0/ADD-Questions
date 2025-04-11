@@ -178,7 +178,6 @@
     <div class="flex-container">
       <button onclick="goToPage('page-2-0')">رجوع</button>
       <div>
-        <!-- الأزرار مع التعديلات المطلوبة -->
         <button onclick="saveSettings()">حفظ التعديل</button>
         <button onclick="saveSettingsAndReturn()">حفظ التعديل والانتقال</button>
         <button onclick="undoChange()">تراجع</button>
@@ -211,6 +210,9 @@
     let undoStack = [];
     let redoStack = [];
     
+    // متغير لتخزين الزر المُختار من قائمة الملفات
+    let selectedFileButton = null;
+    
     /*******************************
      * دوال التنقل بين الصفحات     *
      *******************************/
@@ -219,7 +221,6 @@
       document.getElementById(pageId).classList.add('active');
       
       if(pageId === 'page-2-0') {
-        // تحديث عرض اسم المستخدم من الرأس (السطر الأول من الملف)
         let header = fileContent.split("\n")[0];
         document.getElementById('displayUserName').innerText = header || "اسم المستخدم";
       }
@@ -234,14 +235,13 @@
     /******************************************************
      * التعامل مع الملفات على الخادم (GitHub/railway)    *
      ******************************************************/
-    // صفحة 1:0: تحميل قائمة الملفات من المجلد "fils" على الخادم
+    // صفحة 1:0 - تحميل قائمة الملفات من مجلد "fils"
     function loadFilesList() {
       fetch('/api/files')
         .then(response => response.json())
         .then(files => {
-          // فرز الملفات تنازلياً بناءً على الرقم داخل اسم الملف
+          // فرز الملفات تنازلياً بناءً على الرقم في اسم الملف
           files.sort((a, b) => {
-            // استخراج الرقم من اسم الملف باستخدام تعبير نمطي
             let numA = parseInt(a.match(/(\d+)/)?.[0] || "0");
             let numB = parseInt(b.match(/(\d+)/)?.[0] || "0");
             return numB - numA;
@@ -251,7 +251,16 @@
           files.forEach(file => {
             let btn = document.createElement("button");
             btn.innerText = file;
-            btn.onclick = function() { selectFile(file); };
+            btn.style.marginBottom = "5px";
+            // عند الضغط، تغيير لون الزر إلى الأزرق وتسجيل الملف المختار
+            btn.onclick = function() {
+              if(selectedFileButton) {
+                selectedFileButton.style.backgroundColor = "#1f1f1f";
+              }
+              btn.style.backgroundColor = "blue";
+              selectedFileButton = btn;
+              selectFile(file);
+            };
             listDiv.appendChild(btn);
           });
         })
@@ -275,8 +284,18 @@
         });
     }
     
-    // رفع الملف إلى الخادم (يُستخدم في الصفحات 1:11، 4:0، و2:11)
+    // رفع الملف إلى الخادم بإنشاء ملف جديد (يحسب الاسم الجديد)
     function uploadFile() {
+      // حساب اسم الملف الجديد بزيادة الرقم
+      let newFileName;
+      let regex = /معلوماتي تحديث رقم (\d+)/;
+      let match = currentFileName.match(regex);
+      if(match) {
+        newFileName = "معلوماتي تحديث رقم " + (parseInt(match[1]) + 1) + ".txt";
+      } else {
+        newFileName = "معلوماتي تحديث رقم 1.txt";
+      }
+      currentFileName = newFileName; // تحديث الاسم
       fetch('/api/upload', {
         method: 'POST',
         headers: {
@@ -287,7 +306,7 @@
       .then(response => response.json())
       .then(result => {
         alert("تم رفع الملف إلى الخادم: " + currentFileName);
-        loadFilesList(); // تحديث القائمة بعد الرفع
+        loadFilesList();
       })
       .catch(error => {
         console.error("Error uploading file:", error);
@@ -303,9 +322,8 @@
         alert("من فضلك ادخل اسمك");
         return;
       }
-      fileContent = name + "\n\n\n"; // الرأس يتكون من الاسم وثلاث أسطر فارغة
+      fileContent = name + "\n\n\n"; // الرأس
       currentFileName = "معلوماتي تحديث رقم 1.txt";
-      // عند الإنشاء الجديد لا يوجد أسئلة قديمة
       oldQuestions = [];
       goToPage('page-1-11');
     }
@@ -388,7 +406,6 @@
       newQuestions.push(questionObj);
       rebuildFileContent();
       updateNewQuestionsDisplay();
-      
       document.getElementById('pageNumberInput').value = "";
       document.getElementById('questionNumberInput').value = "";
       document.getElementById('noteInput').value = "";
@@ -422,11 +439,9 @@
       combined.forEach((q, i) => {
         let block = document.createElement("div");
         block.className = "question-block";
-        
         let header = document.createElement("h3");
         header.innerText = "رقم السؤال " + (i+1);
         block.appendChild(header);
-        
         let contentDiv = document.createElement("div");
         contentDiv.id = "question-content-" + i;
         contentDiv.innerHTML = 
@@ -437,22 +452,18 @@
           "الملاحظة على السؤال هي : <br>" + q.note +
           "</p>";
         block.appendChild(contentDiv);
-        
         let sep = document.createElement("div");
         sep.className = "separator";
         sep.innerText = SEPARATOR;
         block.appendChild(sep);
-        
         let editBtn = document.createElement("button");
         editBtn.innerText = "تعديل";
         editBtn.onclick = function() { enterEditMode(i); };
         block.appendChild(editBtn);
-        
         let deleteBtn = document.createElement("button");
         deleteBtn.innerText = "حذف";
         deleteBtn.onclick = function() { deleteQuestion(i); };
         block.appendChild(deleteBtn);
-        
         container.appendChild(block);
       });
     }
@@ -464,7 +475,6 @@
       contentDiv.innerHTML = "";
       let form = document.createElement("div");
       form.className = "edit-form";
-      
       let labelQN = document.createElement("label");
       labelQN.innerText = "رقم السؤال:";
       form.appendChild(labelQN);
@@ -472,7 +482,6 @@
       inputQN.type = "text";
       inputQN.value = q.questionNumber;
       form.appendChild(inputQN);
-      
       let labelPN = document.createElement("label");
       labelPN.innerText = "رقم الصفحة:";
       form.appendChild(labelPN);
@@ -480,7 +489,6 @@
       inputPN.type = "text";
       inputPN.value = q.pageNumber;
       form.appendChild(inputPN);
-      
       let labelDiff = document.createElement("label");
       labelDiff.innerText = "صعوبه السؤال:";
       form.appendChild(labelDiff);
@@ -494,7 +502,6 @@
         selectDiff.appendChild(o);
       });
       form.appendChild(selectDiff);
-      
       let labelNote = document.createElement("label");
       labelNote.innerText = "الملاحظة:";
       form.appendChild(labelNote);
@@ -502,22 +509,18 @@
       textareaNote.rows = 4;
       textareaNote.value = q.note;
       form.appendChild(textareaNote);
-      
       let saveBtn = document.createElement("button");
       saveBtn.innerText = "حفظ";
       saveBtn.onclick = function() { saveEdit(index, inputQN.value, inputPN.value, selectDiff.value, textareaNote.value); };
       form.appendChild(saveBtn);
-      
       let cancelBtn = document.createElement("button");
       cancelBtn.innerText = "إلغاء";
       cancelBtn.onclick = function() { renderSettings(); };
       form.appendChild(cancelBtn);
-      
       contentDiv.appendChild(form);
     }
     
     function pushState() {
-      // حفظ نسخة عميقة من الحالة الحالية
       undoStack.push({
         old: JSON.parse(JSON.stringify(oldQuestions)),
         new: JSON.parse(JSON.stringify(newQuestions))
@@ -526,7 +529,7 @@
     }
     
     function saveEdit(index, newQN, newPN, newDiff, newNote) {
-      pushState(); // حفظ الحالة قبل التعديل
+      pushState();
       if(index < oldQuestions.length) {
         oldQuestions[index].questionNumber = newQN;
         oldQuestions[index].pageNumber = newPN;
@@ -545,7 +548,7 @@
     
     function deleteQuestion(index) {
       if(confirm("هل انت متأكد بحذف سؤال رقم " + (index+1) + "؟")) {
-        pushState(); // حفظ الحالة قبل الحذف
+        pushState();
         if(index < oldQuestions.length) {
           oldQuestions.splice(index, 1);
         } else {
@@ -592,12 +595,10 @@
     /*******************************
      * دوال صفحة الإعدادات (حفظ)    *
      *******************************/
-    // زر "حفظ التعديل": بعد الحفظ ينتقل المستخدم مباشرة إلى صفحة (4:0) ليتمكن من رفع الملف
     function saveSettings() {
       rebuildFileContent();
       goToPage('page-4-0');
     }
-    // زر "حفظ التعديل والانتقال": يحفظ التعديلات ثم يعود إلى صفحة واجهة العمل
     function saveSettingsAndReturn() {
       rebuildFileContent();
       goToPage('page-2-0');
