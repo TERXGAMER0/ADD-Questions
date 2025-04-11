@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <title>موقع تسجيل الأسئلة</title>
   <style>
-    /* النمط الداكن */
+    /* ---------------------- */
+    /* النمط الداكن للموقع   */
+    /* ---------------------- */
     body {
       background-color: #121212;
       color: #ffffff;
@@ -45,7 +47,7 @@
       width: 100%;
       box-sizing: border-box;
     }
-    /* تنسيق أزرار تحديد مستوى الصعوبة في صفحة إضافة السؤال */
+    /* زر اختيار مستوى الصعوبة في صفحة إعداد السؤال */
     .difficulty-button {
       display: inline-block;
       border: 1px solid #ffffff;
@@ -56,7 +58,7 @@
     .selected {
       background-color: blue;
     }
-    /* تنسيق البلوك الخاص بكل سؤال في صفحة الإعدادات */
+    /* تنسيق الكتل الخاصة بالأسئلة في صفحة الإعدادات */
     .question-block {
       border: 1px solid #ffffff;
       padding: 10px;
@@ -68,7 +70,7 @@
       font-size: 12px;
       color: #777777;
     }
-    /* لتوزيع المحتوى في بعض الصفحات */
+    /* تنسيق الحاويات (Flex) */
     .flex-container {
       display: flex;
       justify-content: space-between;
@@ -78,7 +80,7 @@
     .half {
       width: 45%;
     }
-    /* تنسيق النموذج داخل قائمة الإعدادات عند التعديل */
+    /* تنسيق نموذج التعديل داخل صفحة الإعدادات */
     .edit-form input, .edit-form textarea, .edit-form select {
       margin-bottom: 5px;
     }
@@ -86,18 +88,36 @@
 </head>
 <body>
 
-  <!-- صفحة 1:0 - واجهة عرض ملفات الخادم -->
+  <!-- ===================================================== -->
+  <!-- صفحة 1:0 - واجهة عرض الملفات من الخادم والخيارات اليدوية -->
+  <!-- يحتوي على الأزرار: عرض الملفات المحفوظة، صفحة واجهة العمل، إنشاء ملف جديد -->
+  <!-- وأيضاً زر (تنزيل الملف من الجهاز) لنظام الرفع اليدوي -->
+  <!-- ===================================================== -->
   <div id="page-1-0" class="page active">
     <h1>واجهة ملفات النص من الخادم</h1>
+    
+    <!-- زر نظام الخادم: عرض الملفات المحفوظة -->
     <button onclick="loadFilesList()">عرض الملفات المحفوظة</button>
+    
+    <!-- منطقة عرض قائمة الملفات التي تم تحميلها من الخادم -->
     <div id="filesList" style="margin-top:10px;"></div>
+    
+    <!-- زر جديد لنظام اليدوي: تنزيل الملف من الجهاز (اختيار ملف محلي) -->
+    <!-- سنستخدم ملف إدخال مخفي لهذا الغرض -->
+    <button onclick="manualLoadFile()">تنزيل الملف من الجهاز</button>
+    <input type="file" id="manualFileInput" accept=".txt" style="display:none" onchange="handleManualFile(event)">
+    
+    <!-- أزرار التنقل الإضافية -->
     <div style="margin-top:15px;">
       <button onclick="goToPage('page-2-0')">صفحة واجهة العمل</button>
       <button onclick="goToPage('page-1-1')">إنشاء ملف جديد</button>
     </div>
   </div>
 
-  <!-- صفحة 1:1 - واجهة إنشاء ملف txt جديد -->
+  <!-- ===================================================== -->
+  <!-- صفحة 1:1 - واجهة إنشاء ملف نصي جديد على اليدوي -->
+  <!-- يُطلب من المستخدم إدخال اسمه لإنشاء الملف الأولي -->
+  <!-- ===================================================== -->
   <div id="page-1-1" class="page">
     <h1>واجهة إنشاء ملف نصي txt جديد</h1>
     <label>اكتب اسمك:</label>
@@ -108,14 +128,20 @@
     </div>
   </div>
 
+  <!-- ===================================================== -->
   <!-- صفحة 1:11 - واجهة رفع الملف النصي الجديد إلى الخادم -->
+  <!-- بعد إنشاء الملف النصي جديد، يمكن رفعه إلى الخادم -->
+  <!-- ===================================================== -->
   <div id="page-1-11" class="page">
     <h1>رفع ملف txt الخاص بك إلى الخادم</h1>
     <button onclick="uploadFile()">رفع</button>
     <button onclick="goToPage('page-1-0')">رجوع</button>
   </div>
 
+  <!-- ===================================================== -->
   <!-- صفحة 2:0 - واجهة العمل الرئيسية -->
+  <!-- تعرض اسم المستخدم وتحتوي على زر للدخول إلى صفحة إعداد السؤال -->
+  <!-- ===================================================== -->
   <div id="page-2-0" class="page">
     <div class="flex-container">
       <div id="displayUserName">اسم المستخدم</div>
@@ -125,7 +151,11 @@
     <button style="font-size:18px; padding:15px 30px;" onclick="goToPage('page-3-0')">دخول صفحة إعداد سؤال</button>
   </div>
 
+  <!-- ===================================================== -->
   <!-- صفحة 3:0 - واجهة إعداد السؤال -->
+  <!-- يُدخل المستخدم رقم الصفحة ورقم السؤال، ويختار صعوبة السؤال ويكتب الملاحظة -->
+  <!-- يحتوي أيضاً على زر إضافة سؤال جديد وزر لحفظ كافة الأسئلة والتعديل عليها -->
+  <!-- ===================================================== -->
   <div id="page-3-0" class="page">
     <h1>واجهة إعداد السؤال</h1>
     <div class="flex-container">
@@ -162,17 +192,27 @@
       <button onclick="goToPage('page-1-0')">رجوع</button>
       <button onclick="saveQuestionsAndGoToDownload()">زر حفظ معلومات السؤال / الأسئلة</button>
     </div>
-    <!-- عرض ملخص الأسئلة الجديدة المُضافة فقط -->
+    <!-- منطقة عرض ملخص الأسئلة الجديدة المُضافة فقط -->
     <div id="newQuestionsDisplay" style="margin-top:20px; border: 1px dashed #ffffff; padding:10px;"></div>
   </div>
 
+  <!-- ===================================================== -->
   <!-- صفحة 4:0 - واجهة رفع الملف النصي المعدل إلى الخادم -->
+  <!-- في هذه الصفحة يوجد زر رفع الملف إلى الخادم (لنظام الخادم) -->
+  <!-- وأيضاً زر جديد "تحميل على جهاز" لتنزيل الملف المعدل على جهاز المستخدم -->
+  <!-- ===================================================== -->
   <div id="page-4-0" class="page">
     <h1>رفع الملف النصي المعدل إلى الخادم</h1>
     <button onclick="uploadFile()">رفع الملف على الخادم</button>
+    <!-- زر نظام اليدوي: تحميل الملف المعدل على جهاز المستخدم -->
+    <button onclick="manualDownloadFile()">تحميل على جهاز</button>
   </div>
 
+  <!-- ===================================================== -->
   <!-- صفحة 2:1 - صفحة الإعدادات -->
+  <!-- تعرض كافة الأسئلة المُجمعة (من الملف والخادم) مع خيارات تعديل وحذف -->
+  <!-- كما تحتوي على أزرار حفظ التعديل ونظام التراجع والتقدم -->
+  <!-- ===================================================== -->
   <div id="page-2-1" class="page">
     <h1>صفحة الإعدادات</h1>
     <div class="flex-container">
@@ -184,58 +224,66 @@
         <button onclick="redoChange()">تقدم</button>
       </div>
     </div>
-    <!-- قائمة الأسئلة المُجمعة (من الملف والأسئلة الجديدة) مع أزرار تعديل وحذف -->
+    <!-- منطقة عرض قائمة الأسئلة مع أزرار تعديل وحذف -->
     <div id="questionsList" style="margin-top:20px;"></div>
   </div>
 
+  <!-- ===================================================== -->
   <!-- صفحة 2:11 - حفظ التعديلات والانتقال (بعد حفظ التعديل) -->
+  <!-- تُستخدم هذه الصفحة لرفع الملف النهائي إلى الخادم بعد التعديل -->
+  <!-- ===================================================== -->
   <div id="page-2:11" class="page">
     <h1>حفظ التعديلات</h1>
     <button onclick="uploadFile()">رفع الملف النصي</button>
   </div>
 
   <script>
-    /*********************************
-     * المتغيرات والجداول العالمية  *
-     *********************************/
-    let fileContent = ""; // محتوى الملف الكامل (يشمل الرأس والأسئلة)
-    let currentFileName = ""; // اسم الملف الحالي
-    let oldQuestions = [];   // الأسئلة المُحمّلة من الملف (القديمة)
-    let newQuestions = [];   // الأسئلة المُضافة من صفحة 3:0
+    /*********************************************/
+    /* المتغيرات والجداول العالمية والتعليقات */
+    /*********************************************/
+    // fileContent: يحتوي على محتوى الملف النصي الحالي (يشمل الرأس والأسئلة)
+    let fileContent = "";
+    // currentFileName: اسم الملف النصي الحالي (يُستخدم في أنظمة الخادم واليدوي)
+    let currentFileName = "";
+    // oldQuestions: الأسئلة الموجودة والمحمّلة من الملف المُخزَّن على الخادم
+    let oldQuestions = [];
+    // newQuestions: الأسئلة التي تم إضافتها في جلسة التحرير الحالية
+    let newQuestions = [];
+    // selectedDifficulty: مستوى الصعوبة المُختار من واجهة إعداد السؤال
     let selectedDifficulty = "";
-    
+    // ثابت يستخدم كفاصل بين الأسئلة عند تشكيل النص
     const SEPARATOR = "——————————————————————————————————————————————————————————————";
-    
-    // المتغيرات الخاصة بالتراجع والتقدم
+    // undoStack و redoStack: آلية التراجع والتقدم في التعديلات
     let undoStack = [];
     let redoStack = [];
-    
-    // متغير لتخزين الزر المُختار من قائمة الملفات
+    // selectedFileButton: يحتفظ بالزر المُختار من قائمة الملفات لتمييزه باللون الأزرق
     let selectedFileButton = null;
-    
-    /*******************************
-     * دوال التنقل بين الصفحات     *
-     *******************************/
+
+    /*********************************************/
+    /* دوال التنقل بين الصفحات                     */
+    /*********************************************/
     function goToPage(pageId) {
       document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
       document.getElementById(pageId).classList.add('active');
-      
+      // إذا تم الانتقال إلى صفحة 2:0 (واجهة العمل)، يتم تحديث عرض اسم المستخدم
       if(pageId === 'page-2-0') {
         let header = fileContent.split("\n")[0];
         document.getElementById('displayUserName').innerText = header || "اسم المستخدم";
       }
+      // عند دخول صفحة الإعدادات (2:1)، يتم استدعاء دالة renderSettings() لعرض الأسئلة
       if(pageId === 'page-2-1') {
         renderSettings();
       }
+      // عند دخول صفحة إعداد السؤال (3:0)، يتم تحديث عرض الأسئلة الجديدة المُضافة
       if(pageId === 'page-3-0') {
         updateNewQuestionsDisplay();
       }
     }
-    
-    /******************************************************
-     * التعامل مع الملفات على الخادم (GitHub/railway)    *
-     ******************************************************/
-    // صفحة 1:0 - تحميل قائمة الملفات من مجلد "fils"
+
+    /************************************************/
+    /* التعامل مع الملفات على الخادم (API endpoints) */
+    /************************************************/
+    // دالة loadFilesList: تسترجع قائمة الملفات الموجودة في مجلد "fils" من الخادم
     function loadFilesList() {
       fetch('/api/files')
         .then(response => response.json())
@@ -252,7 +300,7 @@
             let btn = document.createElement("button");
             btn.innerText = file;
             btn.style.marginBottom = "5px";
-            // عند الضغط، تغيير لون الزر إلى الأزرق وتسجيل الملف المختار
+            // عند الضغط على أي زر، يتم تمييزه بلون أزرق وتعيين الملف الحالي
             btn.onclick = function() {
               if(selectedFileButton) {
                 selectedFileButton.style.backgroundColor = "#1f1f1f";
@@ -268,8 +316,8 @@
           console.error("Error loading files:", error);
         });
     }
-    
-    // عند اختيار ملف من القائمة
+
+    // دالة selectFile: تسترجع محتوى الملف المُختار من الخادم باستخدام اسم الملف
     function selectFile(filename) {
       fetch('/api/file?name=' + encodeURIComponent(filename))
         .then(response => response.text())
@@ -283,10 +331,10 @@
           console.error("Error loading file:", error);
         });
     }
-    
-    // رفع الملف إلى الخادم بإنشاء ملف جديد (يحسب الاسم الجديد)
+
+    // دالة uploadFile: ترفع الملف النصي إلى الخادم كنُسخة جديدة
     function uploadFile() {
-      // حساب اسم الملف الجديد بزيادة الرقم
+      // حساب اسم الملف الجديد بزيادة الرقم في الاسم الحالي
       let newFileName;
       let regex = /معلوماتي تحديث رقم (\d+)/;
       let match = currentFileName.match(regex);
@@ -295,7 +343,7 @@
       } else {
         newFileName = "معلوماتي تحديث رقم 1.txt";
       }
-      currentFileName = newFileName; // تحديث الاسم
+      currentFileName = newFileName; // تحديث الاسم الحالي للملف
       fetch('/api/upload', {
         method: 'POST',
         headers: {
@@ -306,31 +354,55 @@
       .then(response => response.json())
       .then(result => {
         alert("تم رفع الملف إلى الخادم: " + currentFileName);
-        loadFilesList();
+        loadFilesList(); // تحديث قائمة الملفات بعد الرفع
       })
       .catch(error => {
         console.error("Error uploading file:", error);
       });
     }
-    
-    /************************************
-     * رفع الملف عند الإنشاء الجديد     *
-     ************************************/
+
+    /**********************************************************/
+    /* نظام رفع الملف اليدوي من جهاز المستخدم (Local)        */
+    /**********************************************************/
+    // الدالة manualLoadFile: تفتح نافذة اختيار الملفات على الجهاز المحلي
+    function manualLoadFile() {
+      document.getElementById('manualFileInput').click();
+    }
+
+    // الدالة handleManualFile: تقرأ الملف الذي تم تحديده من الجهاز باستخدام FileReader
+    function handleManualFile(event) {
+      let file = event.target.files[0];
+      if(file) {
+        let reader = new FileReader();
+        reader.onload = function(e) {
+          fileContent = e.target.result;
+          currentFileName = file.name; // استخدام اسم الملف المحلي
+          parseQuestionsFromFile();
+          alert("تم تحميل الملف من جهازك: " + file.name);
+        }
+        reader.readAsText(file);
+      }
+    }
+
+    /**************************************************/
+    /* رفع الملف إلى الخادم عند إنشاء ملف جديد       */
+    /**************************************************/
     function handleNextFromCreateFile() {
       let name = document.getElementById('userNameInput').value.trim();
       if(name === "") {
         alert("من فضلك ادخل اسمك");
         return;
       }
-      fileContent = name + "\n\n\n"; // الرأس
+      // إنشاء محتوى الملف الابتدائي (الرأس مع 3 أسطر فارغة)
+      fileContent = name + "\n\n\n";
       currentFileName = "معلوماتي تحديث رقم 1.txt";
-      oldQuestions = [];
+      oldQuestions = []; // لا توجد أسئلة قديمة
       goToPage('page-1-11');
     }
-    
-    /***********************************************
-     * تحليل الملف لاستخراج الأسئلة القديمة         *
-     ***********************************************/
+
+    /**************************************************/
+    /* تحليل الملف لاستخراج الأسئلة القديمة           */
+    /**************************************************/
     function parseQuestionsFromFile() {
       oldQuestions = [];
       let lines = fileContent.split("\n");
@@ -353,10 +425,11 @@
         }
       });
     }
-    
-    /***********************************************
-     * دالة تشكيل السؤال لإعادة توليد الملف         *
-     ***********************************************/
+
+    /**************************************************/
+    /* دالة تشكيل السؤال (Format Question)           */
+    /* تُعيد توليد نص السؤال باستخدام الفاصل المحدد   */
+    /**************************************************/
     function formatQuestion(q, index) {
       return "سؤال رقم " + index + "\n" +
              "رقم السؤال : " + q.questionNumber + "\n" +
@@ -365,10 +438,10 @@
              "الملاحظة على السؤال هي : \n" + q.note + "\n" +
              SEPARATOR + "\n";
     }
-    
-    /***************************************************
-     * إعادة بناء محتوى الملف بعد التعديلات والحذف   *
-     ***************************************************/
+
+    /**************************************************/
+    /* إعادة بناء محتوى الملف بعد التعديلات والحذف     */
+    /**************************************************/
     function rebuildFileContent() {
       let header = fileContent.split("\n")[0];
       let combined = oldQuestions.concat(newQuestions);
@@ -378,10 +451,11 @@
       });
       fileContent = newContent;
     }
-    
-    /*************************************
-     * دوال صفحة إضافة السؤال (3:0)      *
-     *************************************/
+
+    /**************************************************/
+    /* دوال صفحة إعداد السؤال (3:0)                     */
+    /* يتم من خلالها إضافة الأسئلة الجديدة إلى ملف النص */
+    /**************************************************/
     function selectDifficulty(element, difficulty) {
       document.querySelectorAll('#difficultyOptions .difficulty-button').forEach(btn => btn.classList.remove('selected'));
       element.classList.add('selected');
@@ -406,6 +480,7 @@
       newQuestions.push(questionObj);
       rebuildFileContent();
       updateNewQuestionsDisplay();
+      // مسح المدخلات وإعادة تعيين الاختيارات
       document.getElementById('pageNumberInput').value = "";
       document.getElementById('questionNumberInput').value = "";
       document.getElementById('noteInput').value = "";
@@ -428,10 +503,10 @@
       rebuildFileContent();
       goToPage('page-4-0');
     }
-    
-    /**************************************************
-     * دوال صفحة الإعدادات (2:1) - عرض وتحرير الأسئلة  *
-     **************************************************/
+
+    /**************************************************/
+    /* دوال صفحة الإعدادات (2:1) - عرض وتحرير الأسئلة  */
+    /**************************************************/
     function renderSettings() {
       let container = document.getElementById('questionsList');
       container.innerHTML = "";
@@ -439,6 +514,7 @@
       combined.forEach((q, i) => {
         let block = document.createElement("div");
         block.className = "question-block";
+        // عرض رقم السؤال بشكل منفصل
         let header = document.createElement("h3");
         header.innerText = "رقم السؤال " + (i+1);
         block.appendChild(header);
@@ -592,16 +668,30 @@
       renderSettings();
     }
     
-    /*******************************
-     * دوال صفحة الإعدادات (حفظ)    *
-     *******************************/
+    /*******************************/
+    /* دوال صفحة الإعدادات (حفظ)    */
+    /*******************************/
+    // زر "حفظ التعديل": يحفظ التعديلات ثم ينتقل إلى صفحة (4:0) لرفع الملف إلى الخادم
     function saveSettings() {
       rebuildFileContent();
       goToPage('page-4-0');
     }
+    // زر "حفظ التعديل والانتقال": يحفظ التعديلات ثم يعود إلى واجهة العمل
     function saveSettingsAndReturn() {
       rebuildFileContent();
       goToPage('page-2-0');
+    }
+    
+    /**********************************************************/
+    /* دالة manualDownloadFile: تنزل الملف المُعدل على جهازك  */
+    /* تستخدم Blob لتحويل المحتوى إلى ملف وتنزيله من المتصفح */
+    /**********************************************************/
+    function manualDownloadFile() {
+      let blob = new Blob([fileContent], {type: "text/plain"});
+      let link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = currentFileName;
+      link.click();
     }
   </script>
 </body>
