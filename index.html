@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>موقع تسجيل الأسئلة</title>
+  <style>
+    /* النمط الداكن */
+    body {
+      background-color: #121212;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      direction: rtl;
+    }
+    h1, h3, p, label {
+      margin: 10px 0;
+    }
+    /* إخفاء الصفحات غير النشطة */
+    .page {
+      display: none;
+      padding: 20px;
+    }
+    .active {
+      display: block;
+    }
+    /* تنسيق الأزرار والمدخلات */
+    button {
+      background-color: #1f1f1f;
+      color: #ffffff;
+      border: none;
+      padding: 10px 15px;
+      margin: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #333333;
+    }
+    input, textarea, select {
+      background-color: #1f1f1f;
+      color: #ffffff;
+      border: 1px solid #333333;
+      padding: 8px;
+      margin: 5px 0;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    /* تنسيق أزرار تحديد مستوى الصعوبة في صفحة إضافة السؤال */
+    .difficulty-button {
+      display: inline-block;
+      border: 1px solid #ffffff;
+      padding: 5px 10px;
+      margin: 3px;
+      cursor: pointer;
+    }
+    .selected {
+      background-color: blue;
+    }
+    /* تنسيق البلوك الخاص بكل سؤال في صفحة الإعدادات */
+    .question-block {
+      border: 1px solid #ffffff;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .separator {
+      margin: 10px 0;
+      text-align: center;
+      font-size: 12px;
+      color: #777777;
+    }
+    /* لتوزيع المحتوى في بعض الصفحات */
+    .flex-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .half {
+      width: 45%;
+    }
+    /* تنسيق النموذج داخل قائمة الإعدادات عند التعديل */
+    .edit-form input, .edit-form textarea, .edit-form select {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- صفحة 1:0 - واجهة عرض ملفات الخادم -->
+  <div id="page-1-0" class="page active">
+    <h1>واجهة ملفات النص من الخادم</h1>
+    <button onclick="loadFilesList()">تحديث قائمة الملفات</button>
+    <div id="filesList" style="margin-top:10px;"></div>
+    <div style="margin-top:15px;">
+      <button onclick="goToPage('page-2-0')">صفحة واجهة العمل</button>
+      <button onclick="goToPage('page-1-1')">إنشاء ملف جديد</button>
+    </div>
+  </div>
+
+  <!-- صفحة 1:1 - واجهة إنشاء ملف txt جديد -->
+  <div id="page-1-1" class="page">
+    <h1>واجهة إنشاء ملف نصي txt جديد</h1>
+    <label>اكتب اسمك:</label>
+    <input type="text" id="userNameInput" placeholder="اسم المستخدم">
+    <div>
+      <button onclick="handleNextFromCreateFile()">التالي</button>
+      <button onclick="goToPage('page-1-0')">رجوع</button>
+    </div>
+  </div>
+
+  <!-- صفحة 1:11 - واجهة رفع الملف النصي الجديد إلى الخادم -->
+  <div id="page-1-11" class="page">
+    <h1>رفع ملف txt الخاص بك إلى الخادم</h1>
+    <button onclick="uploadFile()">رفع</button>
+    <button onclick="goToPage('page-1-0')">رجوع</button>
+  </div>
+
+  <!-- صفحة 2:0 - واجهة العمل الرئيسية -->
+  <div id="page-2-0" class="page">
+    <div class="flex-container">
+      <div id="displayUserName">اسم المستخدم</div>
+      <button onclick="goToPage('page-2-1')">الإعدادات</button>
+    </div>
+    <h1>واجهة العمل</h1>
+    <button style="font-size:18px; padding:15px 30px;" onclick="goToPage('page-3-0')">دخول صفحة إعداد سؤال</button>
+  </div>
+
+  <!-- صفحة 3:0 - واجهة إعداد السؤال -->
+  <div id="page-3-0" class="page">
+    <h1>واجهة إعداد السؤال</h1>
+    <div class="flex-container">
+      <div class="half">
+        <label>ضع رقم الصفحة</label>
+        <input type="number" id="pageNumberInput" placeholder="رقم الصفحة">
+      </div>
+      <div class="half">
+        <label>ضع رقم السؤال</label>
+        <input type="number" id="questionNumberInput" placeholder="رقم السؤال">
+      </div>
+    </div>
+    <div>
+      <p>حدد صعوبة السؤال:</p>
+      <div id="difficultyOptions">
+        <span class="difficulty-button" onclick="selectDifficulty(this, 'سهل جدًا')">سهل جدًا</span>
+        <span class="difficulty-button" onclick="selectDifficulty(this, 'سهل')">سهل</span>
+        <span class="difficulty-button" onclick="selectDifficulty(this, 'متوسط جدًا')">متوسط جدًا</span>
+        <span class="difficulty-button" onclick="selectDifficulty(this, 'متوسط')">متوسط</span>
+        <span class="difficulty-button" onclick="selectDifficulty(this, 'صعب')">صعب</span>
+        <span class="difficulty-button" onclick="selectDifficulty(this, 'صعب جدًا')">صعب جدًا</span>
+        <span class="difficulty-button" onclick="selectDifficulty(this, 'شديد الصعوبة')">شديد الصعوبة</span>
+        <span class="difficulty-button" onclick="selectDifficulty(this, 'مستحيل الحل فقط حفظ')">مستحيل الحل فقط حفظ</span>
+      </div>
+    </div>
+    <div>
+      <label>ضع ملاحظتك:</label>
+      <textarea id="noteInput" rows="4" placeholder="ملاحظتك هنا..."></textarea>
+    </div>
+    <div style="margin:10px 0;">
+      <button onclick="saveAndAddQuestion()">حفظ السؤال وإضافة سؤال آخر</button>
+    </div>
+    <div class="flex-container">
+      <button onclick="goToPage('page-1-0')">رجوع</button>
+      <button onclick="saveQuestionsAndGoToDownload()">زر حفظ معلومات السؤال / الأسئلة</button>
+    </div>
+    <!-- عرض ملخص الأسئلة الجديدة المُضافة فقط -->
+    <div id="newQuestionsDisplay" style="margin-top:20px; border: 1px dashed #ffffff; padding:10px;"></div>
+  </div>
+
+  <!-- صفحة 4:0 - واجهة رفع الملف النصي المعدل إلى الخادم -->
+  <div id="page-4-0" class="page">
+    <h1>رفع الملف النصي المعدل إلى الخادم</h1>
+    <button onclick="uploadFile()">رفع الملف على الخادم</button>
+  </div>
+
+  <!-- صفحة 2:1 - صفحة الإعدادات -->
+  <div id="page-2-1" class="page">
+    <h1>صفحة الإعدادات</h1>
+    <div class="flex-container">
+      <button onclick="goToPage('page-2-0')">رجوع</button>
+      <div>
+        <!-- الأزرار مع التعديلات المطلوبة -->
+        <button onclick="saveSettings()">حفظ التعديل</button>
+        <button onclick="saveSettingsAndReturn()">حفظ التعديل والانتقال</button>
+        <button onclick="undoChange()">تراجع</button>
+        <button onclick="redoChange()">تقدم</button>
+      </div>
+    </div>
+    <!-- قائمة الأسئلة المُجمعة (من الملف والأسئلة الجديدة) مع أزرار تعديل وحذف -->
+    <div id="questionsList" style="margin-top:20px;"></div>
+  </div>
+
+  <!-- صفحة 2:11 - حفظ التعديلات والانتقال (بعد حفظ التعديل) -->
+  <div id="page-2-11" class="page">
+    <h1>حفظ التعديلات</h1>
+    <button onclick="uploadFile()">رفع الملف النصي</button>
+  </div>
+
+  <script>
+    /*********************************
+     * المتغيرات والجداول العالمية  *
+     *********************************/
+    let fileContent = ""; // محتوى الملف الكامل (يشمل الرأس والأسئلة)
+    let currentFileName = ""; // اسم الملف الحالي
+    let oldQuestions = [];   // الأسئلة المُحمّلة من الملف (القديمة)
+    let newQuestions = [];   // الأسئلة المُضافة من صفحة 3:0
+    let selectedDifficulty = "";
+    
+    const SEPARATOR = "——————————————————————————————————————————————————————————————";
+    
+    // المتغيرات الخاصة بالتراجع والتقدم
+    let undoStack = [];
+    let redoStack = [];
+    
+    /*******************************
+     * دوال التنقل بين الصفحات     *
+     *******************************/
+    function goToPage(pageId) {
+      document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+      
+      if(pageId === 'page-2-0') {
+        // تحديث عرض اسم المستخدم من الرأس (السطر الأول من الملف)
+        let header = fileContent.split("\n")[0];
+        document.getElementById('displayUserName').innerText = header || "اسم المستخدم";
+      }
+      if(pageId === 'page-2-1') {
+        renderSettings();
+      }
+      if(pageId === 'page-3-0') {
+        updateNewQuestionsDisplay();
+      }
+    }
+    
+    /******************************************************
+     * التعامل مع الملفات على الخادم (GitHub/railway)    *
+     ******************************************************/
+    // صفحة 1:0: تحميل قائمة الملفات من المجلد "fils" على الخادم
+    function loadFilesList() {
+      fetch('/api/files')
+        .then(response => response.json())
+        .then(files => {
+          // نفترض أن الخادم يعيد قائمة مرتبة تنازلياً
+          let listDiv = document.getElementById('filesList');
+          listDiv.innerHTML = "";
+          files.forEach(file => {
+            let btn = document.createElement("button");
+            btn.innerText = file;
+            btn.onclick = function() { selectFile(file); };
+            listDiv.appendChild(btn);
+          });
+        })
+        .catch(error => {
+          console.error("Error loading files:", error);
+        });
+    }
+    
+    // عند اختيار ملف من القائمة
+    function selectFile(filename) {
+      fetch('/api/file?name=' + encodeURIComponent(filename))
+        .then(response => response.text())
+        .then(text => {
+          fileContent = text;
+          currentFileName = filename;
+          parseQuestionsFromFile();
+          alert("تم تحميل الملف: " + filename);
+        })
+        .catch(error => {
+          console.error("Error loading file:", error);
+        });
+    }
+    
+    // رفع الملف إلى الخادم (يُستخدم في صفحة 1:11، 4:0، و 2:11)
+    function uploadFile() {
+      fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ filename: currentFileName, content: fileContent })
+      })
+      .then(response => response.json())
+      .then(result => {
+        alert("تم رفع الملف إلى الخادم: " + currentFileName);
+        // يمكن استدعاء تحديث لقائمة الملفات إذا لزم الأمر
+        loadFilesList();
+      })
+      .catch(error => {
+        console.error("Error uploading file:", error);
+      });
+    }
+    
+    /************************************
+     * رفع الملف عند الإنشاء الجديد     *
+     ************************************/
+    function handleNextFromCreateFile() {
+      let name = document.getElementById('userNameInput').value.trim();
+      if(name === "") {
+        alert("من فضلك ادخل اسمك");
+        return;
+      }
+      fileContent = name + "\n\n\n"; // الرأس يتكون من الاسم وثلاث أسطر فارغة
+      currentFileName = "معلوماتي تحديث رقم 1.txt";
+      // عند الإنشاء الجديد لا يوجد أسئلة قديمة
+      oldQuestions = [];
+      goToPage('page-1-11');
+    }
+    
+    /***********************************************
+     * تحليل الملف لاستخراج الأسئلة القديمة         *
+     ***********************************************/
+    function parseQuestionsFromFile() {
+      oldQuestions = [];
+      let lines = fileContent.split("\n");
+      let header = lines[0];
+      let questionsText = fileContent.substring(fileContent.indexOf(header) + header.length).trim();
+      if(!questionsText) return;
+      let parts = questionsText.split(SEPARATOR);
+      parts.forEach(part => {
+        let block = part.trim();
+        if(block !== "") {
+          let qLines = block.split("\n");
+          let questionObj = {
+            questionNumber: (qLines[1] || "").split(":",2)[1]?.trim() || "",
+            pageNumber: (qLines[2] || "").split(":",2)[1]?.trim() || "",
+            difficulty: (qLines[3] || "").split(":",2)[1]?.trim() || "",
+            note: (qLines[5] || "").trim(),
+            fromFile: true
+          };
+          oldQuestions.push(questionObj);
+        }
+      });
+    }
+    
+    /***********************************************
+     * دالة تشكيل السؤال لإعادة توليد الملف         *
+     ***********************************************/
+    function formatQuestion(q, index) {
+      return "سؤال رقم " + index + "\n" +
+             "رقم السؤال : " + q.questionNumber + "\n" +
+             "رقم الصفحة : " + q.pageNumber + "\n" +
+             "صعوبه السؤال : " + q.difficulty + "\n" +
+             "الملاحظة على السؤال هي : \n" + q.note + "\n" +
+             SEPARATOR + "\n";
+    }
+    
+    /***************************************************
+     * إعادة بناء محتوى الملف بعد التعديلات والحذف     *
+     ***************************************************/
+    function rebuildFileContent() {
+      let header = fileContent.split("\n")[0];
+      let combined = oldQuestions.concat(newQuestions);
+      let newContent = header + "\n\n\n";
+      combined.forEach((q, i) => {
+        newContent += formatQuestion(q, i+1);
+      });
+      fileContent = newContent;
+    }
+    
+    /*************************************
+     * دوال صفحة إضافة السؤال (3:0)      *
+     *************************************/
+    function selectDifficulty(element, difficulty) {
+      document.querySelectorAll('#difficultyOptions .difficulty-button').forEach(btn => btn.classList.remove('selected'));
+      element.classList.add('selected');
+      selectedDifficulty = difficulty;
+    }
+    
+    function saveAndAddQuestion() {
+      let pageNum = document.getElementById('pageNumberInput').value.trim();
+      let questionNum = document.getElementById('questionNumberInput').value.trim();
+      let note = document.getElementById('noteInput').value.trim();
+      if(pageNum === "" || questionNum === "" || selectedDifficulty === "") {
+        alert("من فضلك اكمل البيانات المطلوبة بما في ذلك صعوبة السؤال");
+        return;
+      }
+      let questionObj = {
+        questionNumber: questionNum,
+        pageNumber: pageNum,
+        difficulty: selectedDifficulty,
+        note: note,
+        fromFile: false
+      };
+      newQuestions.push(questionObj);
+      rebuildFileContent();
+      updateNewQuestionsDisplay();
+      
+      document.getElementById('pageNumberInput').value = "";
+      document.getElementById('questionNumberInput').value = "";
+      document.getElementById('noteInput').value = "";
+      selectedDifficulty = "";
+      document.querySelectorAll('#difficultyOptions .difficulty-button').forEach(btn => btn.classList.remove('selected'));
+    }
+    
+    function updateNewQuestionsDisplay() {
+      let displayDiv = document.getElementById('newQuestionsDisplay');
+      displayDiv.innerHTML = "";
+      newQuestions.forEach((q, i) => {
+        let div = document.createElement("div");
+        div.style.marginBottom = "10px";
+        div.innerText = formatQuestion(q, oldQuestions.length + i + 1);
+        displayDiv.appendChild(div);
+      });
+    }
+    
+    function saveQuestionsAndGoToDownload() {
+      rebuildFileContent();
+      goToPage('page-4-0');
+    }
+    
+    /**************************************************
+     * دوال صفحة الإعدادات (2:1) - عرض وتحرير الأسئلة  *
+     **************************************************/
+    function renderSettings() {
+      let container = document.getElementById('questionsList');
+      container.innerHTML = "";
+      let combined = oldQuestions.concat(newQuestions);
+      combined.forEach((q, i) => {
+        let block = document.createElement("div");
+        block.className = "question-block";
+        
+        let header = document.createElement("h3");
+        header.innerText = "رقم السؤال " + (i+1);
+        block.appendChild(header);
+        
+        let contentDiv = document.createElement("div");
+        contentDiv.id = "question-content-" + i;
+        contentDiv.innerHTML = 
+          "<p>" +
+          "رقم السؤال : " + q.questionNumber + "<br>" +
+          "رقم الصفحة : " + q.pageNumber + "<br>" +
+          "صعوبه السؤال : " + q.difficulty + "<br>" +
+          "الملاحظة على السؤال هي : <br>" + q.note +
+          "</p>";
+        block.appendChild(contentDiv);
+        
+        let sep = document.createElement("div");
+        sep.className = "separator";
+        sep.innerText = SEPARATOR;
+        block.appendChild(sep);
+        
+        let editBtn = document.createElement("button");
+        editBtn.innerText = "تعديل";
+        editBtn.onclick = function() { enterEditMode(i); };
+        block.appendChild(editBtn);
+        
+        let deleteBtn = document.createElement("button");
+        deleteBtn.innerText = "حذف";
+        deleteBtn.onclick = function() { deleteQuestion(i); };
+        block.appendChild(deleteBtn);
+        
+        container.appendChild(block);
+      });
+    }
+    
+    function enterEditMode(index) {
+      let combined = oldQuestions.concat(newQuestions);
+      let q = combined[index];
+      let contentDiv = document.getElementById("question-content-" + index);
+      contentDiv.innerHTML = "";
+      let form = document.createElement("div");
+      form.className = "edit-form";
+      
+      let labelQN = document.createElement("label");
+      labelQN.innerText = "رقم السؤال:";
+      form.appendChild(labelQN);
+      let inputQN = document.createElement("input");
+      inputQN.type = "text";
+      inputQN.value = q.questionNumber;
+      form.appendChild(inputQN);
+      
+      let labelPN = document.createElement("label");
+      labelPN.innerText = "رقم الصفحة:";
+      form.appendChild(labelPN);
+      let inputPN = document.createElement("input");
+      inputPN.type = "text";
+      inputPN.value = q.pageNumber;
+      form.appendChild(inputPN);
+      
+      let labelDiff = document.createElement("label");
+      labelDiff.innerText = "صعوبه السؤال:";
+      form.appendChild(labelDiff);
+      let selectDiff = document.createElement("select");
+      let options = ["سهل جدًا", "سهل", "متوسط جدًا", "متوسط", "صعب", "صعب جدًا", "شديد الصعوبة", "مستحيل الحل فقط حفظ"];
+      options.forEach(opt => {
+        let o = document.createElement("option");
+        o.value = opt;
+        o.text = opt;
+        if(q.difficulty === opt) o.selected = true;
+        selectDiff.appendChild(o);
+      });
+      form.appendChild(selectDiff);
+      
+      let labelNote = document.createElement("label");
+      labelNote.innerText = "الملاحظة:";
+      form.appendChild(labelNote);
+      let textareaNote = document.createElement("textarea");
+      textareaNote.rows = 4;
+      textareaNote.value = q.note;
+      form.appendChild(textareaNote);
+      
+      let saveBtn = document.createElement("button");
+      saveBtn.innerText = "حفظ";
+      saveBtn.onclick = function() { saveEdit(index, inputQN.value, inputPN.value, selectDiff.value, textareaNote.value); };
+      form.appendChild(saveBtn);
+      
+      let cancelBtn = document.createElement("button");
+      cancelBtn.innerText = "إلغاء";
+      cancelBtn.onclick = function() { renderSettings(); };
+      form.appendChild(cancelBtn);
+      
+      contentDiv.appendChild(form);
+    }
+    
+    function pushState() {
+      // حفظ نسخة عميقة من الحالة الحالية
+      undoStack.push({
+        old: JSON.parse(JSON.stringify(oldQuestions)),
+        new: JSON.parse(JSON.stringify(newQuestions))
+      });
+      redoStack = [];
+    }
+    
+    function saveEdit(index, newQN, newPN, newDiff, newNote) {
+      pushState(); // حفظ الحالة قبل التعديل
+      if(index < oldQuestions.length) {
+        oldQuestions[index].questionNumber = newQN;
+        oldQuestions[index].pageNumber = newPN;
+        oldQuestions[index].difficulty = newDiff;
+        oldQuestions[index].note = newNote;
+      } else {
+        let nIndex = index - oldQuestions.length;
+        newQuestions[nIndex].questionNumber = newQN;
+        newQuestions[nIndex].pageNumber = newPN;
+        newQuestions[nIndex].difficulty = newDiff;
+        newQuestions[nIndex].note = newNote;
+      }
+      rebuildFileContent();
+      renderSettings();
+    }
+    
+    function deleteQuestion(index) {
+      if(confirm("هل انت متأكد بحذف سؤال رقم " + (index+1) + "؟")) {
+        pushState(); // حفظ الحالة قبل الحذف
+        if(index < oldQuestions.length) {
+          oldQuestions.splice(index, 1);
+        } else {
+          let nIndex = index - oldQuestions.length;
+          newQuestions.splice(nIndex, 1);
+        }
+        rebuildFileContent();
+        renderSettings();
+      }
+    }
+    
+    function undoChange() {
+      if(undoStack.length === 0) {
+        alert("لا يوجد شيء للتراجع عنه.");
+        return;
+      }
+      redoStack.push({
+        old: JSON.parse(JSON.stringify(oldQuestions)),
+        new: JSON.parse(JSON.stringify(newQuestions))
+      });
+      let prevState = undoStack.pop();
+      oldQuestions = prevState.old;
+      newQuestions = prevState.new;
+      rebuildFileContent();
+      renderSettings();
+    }
+    
+    function redoChange() {
+      if(redoStack.length === 0) {
+        alert("لا يوجد شيء للتقدم إليه.");
+        return;
+      }
+      undoStack.push({
+        old: JSON.parse(JSON.stringify(oldQuestions)),
+        new: JSON.parse(JSON.stringify(newQuestions))
+      });
+      let nextState = redoStack.pop();
+      oldQuestions = nextState.old;
+      newQuestions = nextState.new;
+      rebuildFileContent();
+      renderSettings();
+    }
+    
+    /*******************************
+     * دوال صفحة الإعدادات (حفظ)    *
+     *******************************/
+    // زر "حفظ التعديل": بعد الحفظ ينتقل المستخدم مباشرة إلى صفحة 4:0 ليتمكن من رفع الملف
+    function saveSettings() {
+      rebuildFileContent();
+      goToPage('page-4-0');
+    }
+    // زر "حفظ التعديل والانتقال": يحفظ التعديلات ثم يعود إلى صفحة واجهة العمل
+    function saveSettingsAndReturn() {
+      rebuildFileContent();
+      goToPage('page-2-0');
+    }
+  </script>
+</body>
+</html>
