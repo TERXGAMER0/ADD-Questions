@@ -92,34 +92,33 @@
   <!-- صفحة 1:0 - واجهة عرض الملفات من الخادم والخيارات اليدوية -->
   <!-- تحتوي على: -->
   <!-- • زر "عرض الملفات المحفوظة" لاستدعاء الدالة loadFilesList() -->
-  <!-- • منطقة لعرض قائمة الملفات من الخادم (filesList) -->
-  <!-- • زر "تنزيل الملف من الجهاز" لنظام التنزيل اليدوي -->
-  <!-- • زر "صفحة واجهة العمل" (يتحقق من اختيار ملف واحد فقط) -->
-  <!-- • زر "إنشاء ملف جديد" للانتقال إلى صفحة إنشاء الملف -->
+  <!-- • منطقة عرض قائمة الملفات (filesList) -->
+  <!-- • زر "تنزيل الملف من الجهاز" (لنظام التنزيل اليدوي) -->
+  <!-- • زر "صفحة واجهة العمل" (يجب اختيار ملف واحد فقط) -->
+  <!-- • زر "إنشاء ملف جديد" -->
+  <!-- • زر "تحميل الملف النصي" لتنزيل الملفات المختارة من الخادم -->
   <!-- ===================================================== -->
   <div id="page-1-0" class="page active">
     <h1>واجهة ملفات النص من الخادم</h1>
     
-    <!-- زر لعرض الملفات المحفوظة من الخادم -->
+    <!-- زر عرض الملفات المحفوظة من الخادم -->
     <button onclick="loadFilesList()">عرض الملفات المحفوظة</button>
     
-    <!-- منطقة عرض قائمة الملفات -->
+    <!-- منطقة عرض قائمة الملفات من الخادم -->
     <div id="filesList" style="margin-top:10px;"></div>
     
-    <!-- زر لتنزيل الملفات من الجهاز (نظام التنزيل اليدوي) -->
+    <!-- زر لتنزيل الملف من الجهاز (اختيار الملف من جهاز المستخدم) -->
     <button onclick="manualLoadFile()">تنزيل الملف من الجهاز</button>
-    <!-- عنصر input مخفي لاختيار ملف من جهاز المستخدم -->
+    <!-- input مخفي لاختيار الملف من الجهاز -->
     <input type="file" id="manualFileInput" accept=".txt" style="display:none" onchange="handleManualFile(event)">
     
     <!-- أزرار تنقل إضافية -->
     <div style="margin-top:15px;">
-      <!-- زر الانتقال إلى واجهة العمل: يتحقق أن يكون محدد ملف واحد فقط -->
       <button onclick="goToWorkPage()">صفحة واجهة العمل</button>
-      <!-- زر إنشاء ملف جديد -->
       <button onclick="goToPage('page-1-1')">إنشاء ملف جديد</button>
     </div>
     
-    <!-- زر جديد لتنزيل الملفات من الخادم (نظام التنزيل اليدوي من الخادم) -->
+    <!-- زر تنزيل الملفات المختارة من الخادم (يمكن اختيار ملف واحد أو أكثر) -->
     <div style="margin-top:15px;">
       <button onclick="downloadSelectedFiles()">تحميل الملف النصي</button>
     </div>
@@ -208,7 +207,7 @@
 
   <!-- ===================================================== -->
   <!-- صفحة 4:0 - واجهة رفع الملف النصي المعدل إلى الخادم -->
-  <!-- تحتوي على زري: "رفع الملف على الخادم" ونظام "تحميل على جهاز" -->
+  <!-- تحتوي على زري: "رفع الملف على الخادم" لنظام الخادم، و"تحميل على جهاز" لتنزيل الملف المُعدل على الجهاز -->
   <!-- ===================================================== -->
   <div id="page-4-0" class="page">
     <h1>رفع الملف النصي المعدل إلى الخادم</h1>
@@ -236,7 +235,7 @@
 
   <!-- ===================================================== -->
   <!-- صفحة 2:11 - حفظ التعديلات والانتقال (بعد حفظ التعديل) -->
-  <!-- تُستخدم لرفع الملف النهائي إلى الخادم -->
+  <!-- تُستخدم هذه الصفحة لرفع الملف النهائي إلى الخادم -->
   <!-- ===================================================== -->
   <div id="page-2:11" class="page">
     <h1>حفظ التعديلات</h1>
@@ -245,25 +244,27 @@
 
   <script>
     /*********************************************/
-    /* المتغيرات والتعليقات حول المتغيرات العامة */
+    /* المتغيرات العامة وتعليقات حول وظيفتها     */
     /*********************************************/
     // fileContent: يحتوي على محتوى الملف النصي الحالي (الرأس والأسئلة)
     let fileContent = "";
-    // currentFileName: اسم الملف النصي الحالي (يُستخدم لنظام الخادم واليدوي)
+    // currentFileName: اسم الملف النصي الحالي (يستخدم في نظام الخادم واليدوي)
     let currentFileName = "";
     // oldQuestions: الأسئلة الموجودة في الملف المُحمَّل من الخادم
     let oldQuestions = [];
     // newQuestions: الأسئلة التي تمت إضافتها أثناء الجلسة
     let newQuestions = [];
-    // selectedDifficulty: مستوى الصعوبة المُختار في صفحة إعداد السؤال
+    // selectedDifficulty: مستوى الصعوبة الذي يتم اختياره في صفحة إعداد السؤال
     let selectedDifficulty = "";
     // SEPARATOR: الفاصل الثابت المستخدم لتمييز الأسئلة داخل الملف
     const SEPARATOR = "——————————————————————————————————————————————————————————————";
-    // undoStack و redoStack: لتخزين حالات التعديلات للتراجع والتقدم
+    // undoStack و redoStack: لتخزين حالات التعديل للتراجع والتقدم
     let undoStack = [];
     let redoStack = [];
-    // selectedFiles: مصفوفة لتخزين أسماء الملفات المختارة من قائمة الملفات
+    // selectedFiles: مصفوفة لتخزين أسماء الملفات التي تم اختيارها من قائمة الملفات
     let selectedFiles = [];
+    // isUploaded: متغيّر لتحديد ما إذا كان الملف قد رُفع إلى الخادم بالفعل
+    let isUploaded = false;
 
     /*********************************************/
     /* دوال التنقل بين الصفحات                     */
@@ -271,25 +272,25 @@
     function goToPage(pageId) {
       document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
       document.getElementById(pageId).classList.add('active');
-      // عند الدخول إلى صفحة واجهة العمل (2:0)، تحديث عرض اسم المستخدم
+      // عند الدخول إلى صفحة واجهة العمل (2:0) تحديث عرض اسم المستخدم
       if(pageId === 'page-2-0') {
         let header = fileContent.split("\n")[0];
         document.getElementById('displayUserName').innerText = header || "اسم المستخدم";
       }
-      // عند دخول صفحة الإعدادات (2:1)، استدعاء renderSettings() لعرض الأسئلة
+      // عند دخول صفحة الإعدادات (2:1) استدعاء renderSettings() لعرض الأسئلة
       if(pageId === 'page-2-1') {
         renderSettings();
       }
-      // عند دخول صفحة إعداد السؤال (3:0)، تحديث عرض الأسئلة الجديدة المُضافة
+      // عند دخول صفحة إعداد السؤال (3:0) تحديث عرض الأسئلة الجديدة المُضافة
       if(pageId === 'page-3-0') {
         updateNewQuestionsDisplay();
       }
     }
     
     /**************************************************/
-    /* نظام التعامل مع الملفات على الخادم (API)       */
+    /* التعامل مع الملفات على الخادم (API endpoints) */
     /**************************************************/
-    // دالة loadFilesList: تحميل قائمة الملفات من مجلد fils على الخادم
+    // loadFilesList: تحميل قائمة الملفات الموجودة في مجلد fils من الخادم
     function loadFilesList() {
       fetch('/api/files')
         .then(response => response.json())
@@ -302,20 +303,17 @@
           });
           let listDiv = document.getElementById('filesList');
           listDiv.innerHTML = "";
-          // إعادة تعيين القائمة المختارة
-          selectedFiles = [];
+          selectedFiles = []; // إعادة تعيين قائمة الملفات المختارة
           files.forEach(file => {
             let btn = document.createElement("button");
             btn.innerText = file;
             btn.style.marginBottom = "5px";
-            // عند الضغط على زر الملف يتم تفعيل/تعطيل التحديد (تحديد متعدد)
+            // عند الضغط، يتم تفعيل/تعطيل التحديد (يمكن اختيار ملف واحد أو أكثر)
             btn.onclick = function() {
-              // إذا الملف موجود في المصفوفة، قم بإلغاء التحديد
               if(selectedFiles.includes(file)) {
                 selectedFiles = selectedFiles.filter(f => f !== file);
                 btn.style.backgroundColor = "#1f1f1f";
               } else {
-                // إضافة الملف إلى المصفوفة عند التحديد
                 selectedFiles.push(file);
                 btn.style.backgroundColor = "blue";
               }
@@ -328,13 +326,13 @@
         });
     }
     
-    // دالة downloadSelectedFiles: تنزيل الملفات المختارة من الخادم إلى جهاز المستخدم
+    // downloadSelectedFiles: تنزيل الملفات المختارة من الخادم إلى جهاز المستخدم
     function downloadSelectedFiles() {
       if(selectedFiles.length === 0) {
         alert("لم يتم اختيار أي ملفات.");
         return;
       }
-      // لكل ملف مختار، نطلب محتواه ثم ننزله
+      // لكل ملف مختار يتم طلب المحتوى وتنزيله
       selectedFiles.forEach(file => {
         fetch('/api/file?name=' + encodeURIComponent(file))
           .then(response => response.text())
@@ -351,7 +349,7 @@
       });
     }
     
-    // دالة selectFile: تحميل محتوى الملف المُختار من الخادم (تستخدم للانتقال إلى واجهة العمل)
+    // selectFile: تحميل محتوى ملف واحد (يستخدم للانتقال إلى واجهة العمل)
     function selectFile(filename) {
       fetch('/api/file?name=' + encodeURIComponent(filename))
         .then(response => response.text())
@@ -366,20 +364,19 @@
         });
     }
     
-    // دالة goToWorkPage: تنتقل إلى صفحة واجهة العمل إذا كان هناك ملف واحد فقط مختار
+    // goToWorkPage: الانتقال إلى صفحة واجهة العمل بشرط اختيار ملف واحد فقط
     function goToWorkPage() {
       if(selectedFiles.length !== 1) {
         alert("يجب عليك اختيار ملف واحد فقط وليس عدة ملفات.");
         return;
       }
-      // تحميل الملف المختار إذا لم يكن محملاً
       if(currentFileName !== selectedFiles[0]) {
         selectFile(selectedFiles[0]);
       }
       goToPage('page-2-0');
     }
     
-    // دالة uploadFile: رفع الملف إلى الخادم كنُسخة جديدة (يحسب اسم الملف الجديد)
+    // uploadFile: رفع الملف إلى الخادم وإنشاء نسخة جديدة باسم محسوب
     function uploadFile() {
       let newFileName;
       let regex = /معلوماتي تحديث رقم (\d+)/;
@@ -390,6 +387,8 @@
         newFileName = "معلوماتي تحديث رقم 1.txt";
       }
       currentFileName = newFileName;
+      // عند رفع الملف يتم تعيين isUploaded إلى true
+      isUploaded = true;
       fetch('/api/upload', {
         method: 'POST',
         headers: {
@@ -408,7 +407,7 @@
     }
     
     /**********************************************************/
-    /* نظام رفع الملف اليدوي من الجهاز (Local)             */
+    /* نظام رفع الملف اليدوي من جهاز المستخدم (Local)         */
     /**********************************************************/
     function manualLoadFile() {
       document.getElementById('manualFileInput').click();
@@ -470,7 +469,7 @@
     }
     
     /**************************************************/
-    /* دالة formatQuestion: توليد نص السؤال بالكامل     */
+    /* formatQuestion: توليد نص السؤال بالكامل         */
     /**************************************************/
     function formatQuestion(q, index) {
       return "سؤال رقم " + index + "\n" +
@@ -482,7 +481,7 @@
     }
     
     /**************************************************/
-    /* إعادة بناء محتوى الملف بعد التعديل والحذف         */
+    /* rebuildFileContent: إعادة توليد محتوى الملف      */
     /**************************************************/
     function rebuildFileContent() {
       let header = fileContent.split("\n")[0];
@@ -721,17 +720,24 @@
     }
     
     /********************************************************/
-    /* دالة manualDownloadFile: تنزيل الملف المُعدل على جهاز المستخدم */
-    /* يتم حساب الاسم الجديد بزيادة الرقم كما في uploadFile        */
+    /* manualDownloadFile: تنزيل الملف المُعدل على جهاز المستخدم */
+    /* إذا تم رفع الملف مسبقًا (isUploaded true)، تستخدم الاسم الحالي دون زيادة */
     /********************************************************/
     function manualDownloadFile() {
       let newFileName;
-      let regex = /معلوماتي تحديث رقم (\d+)/;
-      let match = currentFileName.match(regex);
-      if(match) {
-        newFileName = "معلوماتي تحديث رقم " + (parseInt(match[1]) + 1) + ".txt";
+      // إذا تم رفع الملف (isUploaded true) فاستعمل currentFileName كما هو
+      if(isUploaded) {
+        newFileName = currentFileName;
+        // إعادة تعيين العلم بعد الاستخدام
+        isUploaded = false;
       } else {
-        newFileName = "معلوماتي تحديث رقم 1.txt";
+        let regex = /معلوماتي تحديث رقم (\d+)/;
+        let match = currentFileName.match(regex);
+        if(match) {
+          newFileName = "معلوماتي تحديث رقم " + (parseInt(match[1]) + 1) + ".txt";
+        } else {
+          newFileName = "معلوماتي تحديث رقم 1.txt";
+        }
       }
       let blob = new Blob([fileContent], {type: "text/plain"});
       let link = document.createElement("a");
@@ -739,6 +745,9 @@
       link.download = newFileName;
       link.click();
     }
+    
+    // تعريف متغيّر isUploaded لتتبع رفع الملف إلى الخادم
+    let isUploaded = false;
   </script>
 </body>
 </html>
