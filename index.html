@@ -89,7 +89,7 @@
   <!-- صفحة 1:0 - واجهة عرض ملفات الخادم -->
   <div id="page-1-0" class="page active">
     <h1>واجهة ملفات النص من الخادم</h1>
-    <button onclick="loadFilesList()">تحديث قائمة الملفات</button>
+    <button onclick="loadFilesList()">عرض الملفات المحفوظة</button>
     <div id="filesList" style="margin-top:10px;"></div>
     <div style="margin-top:15px;">
       <button onclick="goToPage('page-2-0')">صفحة واجهة العمل</button>
@@ -190,7 +190,7 @@
   </div>
 
   <!-- صفحة 2:11 - حفظ التعديلات والانتقال (بعد حفظ التعديل) -->
-  <div id="page-2-11" class="page">
+  <div id="page-2:11" class="page">
     <h1>حفظ التعديلات</h1>
     <button onclick="uploadFile()">رفع الملف النصي</button>
   </div>
@@ -239,7 +239,13 @@
       fetch('/api/files')
         .then(response => response.json())
         .then(files => {
-          // نفترض أن الخادم يعيد قائمة مرتبة تنازلياً
+          // فرز الملفات تنازلياً بناءً على الرقم داخل اسم الملف
+          files.sort((a, b) => {
+            // استخراج الرقم من اسم الملف باستخدام تعبير نمطي
+            let numA = parseInt(a.match(/(\d+)/)?.[0] || "0");
+            let numB = parseInt(b.match(/(\d+)/)?.[0] || "0");
+            return numB - numA;
+          });
           let listDiv = document.getElementById('filesList');
           listDiv.innerHTML = "";
           files.forEach(file => {
@@ -269,7 +275,7 @@
         });
     }
     
-    // رفع الملف إلى الخادم (يُستخدم في صفحة 1:11، 4:0، و 2:11)
+    // رفع الملف إلى الخادم (يُستخدم في الصفحات 1:11، 4:0، و2:11)
     function uploadFile() {
       fetch('/api/upload', {
         method: 'POST',
@@ -281,8 +287,7 @@
       .then(response => response.json())
       .then(result => {
         alert("تم رفع الملف إلى الخادم: " + currentFileName);
-        // يمكن استدعاء تحديث لقائمة الملفات إذا لزم الأمر
-        loadFilesList();
+        loadFilesList(); // تحديث القائمة بعد الرفع
       })
       .catch(error => {
         console.error("Error uploading file:", error);
@@ -344,7 +349,7 @@
     }
     
     /***************************************************
-     * إعادة بناء محتوى الملف بعد التعديلات والحذف     *
+     * إعادة بناء محتوى الملف بعد التعديلات والحذف   *
      ***************************************************/
     function rebuildFileContent() {
       let header = fileContent.split("\n")[0];
@@ -587,7 +592,7 @@
     /*******************************
      * دوال صفحة الإعدادات (حفظ)    *
      *******************************/
-    // زر "حفظ التعديل": بعد الحفظ ينتقل المستخدم مباشرة إلى صفحة 4:0 ليتمكن من رفع الملف
+    // زر "حفظ التعديل": بعد الحفظ ينتقل المستخدم مباشرة إلى صفحة (4:0) ليتمكن من رفع الملف
     function saveSettings() {
       rebuildFileContent();
       goToPage('page-4-0');
