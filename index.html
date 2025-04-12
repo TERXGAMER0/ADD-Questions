@@ -22,7 +22,7 @@
     h1 { font-size: 2rem; margin: 20px 0; text-align: center; }
     h3 { font-size: 1.5rem; margin: 15px 0; text-align: center; }
     p, label { font-size: 1rem; margin: 10px 0; text-align: center; }
-    
+
     /* ============================= */
     /* Page Layout & Container       */
     /* ============================= */
@@ -36,7 +36,7 @@
     }
     .active { display: flex; }
     .container { width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; }
-    
+
     /* ============================= */
     /* Form Controls & Buttons       */
     /* ============================= */
@@ -62,7 +62,7 @@
       border: 1px solid #333333;
       border-radius: 4px;
     }
-    
+
     /* ============================= */
     /* Flex Containers               */
     /* ============================= */
@@ -75,7 +75,7 @@
     }
     .half { width: 48%; }
     @media (max-width:768px) { .half { width: 100%; } }
-    
+
     /* ============================= */
     /* Difficulty Buttons            */
     /* ============================= */
@@ -91,7 +91,7 @@
       width: calc(50% - 20px);
     }
     .difficulty-button.selected { background-color: blue; }
-    
+
     /* ============================= */
     /* Question Blocks               */
     /* ============================= */
@@ -108,7 +108,7 @@
       font-size: 0.875rem;
       color: #777777;
     }
-    
+
     /* ============================= */
     /* Manual File Name Display      */
     /* ============================= */
@@ -117,7 +117,7 @@
       padding: 5px;
       border: 1px solid #ffffff;
       border-radius: 4px;
-      color: #ffffff;
+      color: #ffffff;  /* نص أبيض */
       text-align: center;
       width: 100%;
       max-width: 800px;
@@ -174,7 +174,7 @@
   <div id="page-1-11" class="page">
     <div class="container">
       <h1>رفع ملف txt الخاص بك إلى الخادم</h1>
-      <!-- زر رفع الملف -->
+      <!-- زر رفع الملف المعاد تسميته -->
       <button onclick="uploadFileAndGoBack()">رفع الى الخادم</button>
       <!-- زر تنزيل الملف الجديد -->
       <button onclick="downloadNewFile()">تنزيل الملف الجديد</button>
@@ -240,10 +240,10 @@
   <div id="page-4-0" class="page">
     <div class="container">
       <h1>رفع الملف النصي المعدل إلى الخادم</h1>
-      <!-- زر رفع الملف: يقوم بتحديث currentFileName فقط، ولا يُحدث downloadFileName -->
+      <!-- زر رفع الملف يبقى نفس وظيفته الآن دون إعادة المستخدم -->
       <button onclick="uploadFileAndGoBack()">رفع الى الخادم</button>
-      <!-- زر تنزيل الملف: يستخدم downloadFileName ويزيده بمقدار 1 عند كل ضغط -->
-      <button onclick="downloadFileForDevice()">تحميل على جهاز</button>
+      <!-- زر تنزيل الملف على الجهاز: يستخدم الاسم الحالي كما هو -->
+      <button onclick="manualDownloadFile()">تحميل على جهاز</button>
     </div>
   </div>
 
@@ -274,7 +274,7 @@
 
   <script>
     /*********************************************/
-    /* المتغيرات العامة والتعليقات               */
+    /* المتغيرات والتعليقات حول المتغيرات العامة */
     /*********************************************/
     let fileContent = "";
     let currentFileName = "";
@@ -285,13 +285,9 @@
     let undoStack = [];
     let redoStack = [];
     let selectedFiles = [];
-    // متغير لتخزين الاسم الأصلي للملف عند أول رفع (يستخدم للتنزيل)
-    let initialUploadedFileName = "";
-    // متغير لتخزين اسم التنزيل الحالي (لزر "تحميل على جهاز")، يتم تحديثه عند كل ضغط
-    let downloadFileName = "";
 
     /*********************************************/
-    /* دوال التنقل بين الصفحات                   */
+    /* دوال التنقل بين الصفحات                     */
     /*********************************************/
     function goToPage(pageId) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -370,22 +366,29 @@
       goToPage('page-2-0');
     }
     
-    // دالة إنشاء الملف (عند الإنشاء اليدوي أو عن طريق التحميل)؛ يتم تعيين currentFileName و downloadFileName معًا
-    function setInitialFileName(name) {
-      currentFileName = name;
-      initialUploadedFileName = name;
-      downloadFileName = name;
+    // دالة رفع الملف التي لا تعيد المستخدم إلى صفحة (1:0)
+    function uploadFileAndGoBack() {
+      let regex = /معلوماتي تحديث رقم (\d+)/;
+      let match = currentFileName.match(regex);
+      let newFileName = match ? `معلوماتي تحديث رقم ${parseInt(match[1]) + 1}.txt` : 'معلوماتي تحديث رقم 1.txt';
+      currentFileName = newFileName;
+      fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: currentFileName, content: fileContent })
+      })
+      .then(r => r.json())
+      .then(_ => {
+        alert('تم رفع الملف إلى الخادم: ' + currentFileName);
+        loadFilesList();
+        // لا يتم إعادة التوجيه؛ يبقى المستخدم في نفس الصفحة (4:0)
+      })
+      .catch(err => console.error('Error uploading file:', err));
     }
     
-    function handleNextFromCreateFile() {
-      let name = document.getElementById('userNameInput').value.trim();
-      if (!name) { alert('من فضلك ادخل اسمك'); return; }
-      fileContent = name + "\n\n\n";
-      setInitialFileName('معلوماتي تحديث رقم 1.txt');
-      oldQuestions = [];
-      goToPage('page-1-11');
-    }
-    
+    /**********************************************************/
+    /* نظام رفع الملف اليدوي من جهاز المستخدم (Local)       */
+    /**********************************************************/
     function manualLoadFile() { document.getElementById('manualFileInput').click(); }
     function handleManualFile(e) {
       let file = e.target.files[0];
@@ -393,13 +396,22 @@
         let reader = new FileReader();
         reader.onload = function(ev) {
           fileContent = ev.target.result;
-          setInitialFileName(file.name);
+          currentFileName = file.name;
           parseQuestionsFromFile();
           document.getElementById('manualFileNameDisplay').innerText = file.name;
           alert('تم تحميل الملف من جهازك: ' + file.name);
-        }
+        };
         reader.readAsText(file);
       }
+    }
+    
+    function handleNextFromCreateFile() {
+      let name = document.getElementById('userNameInput').value.trim();
+      if (!name) { alert('من فضلك ادخل اسمك'); return; }
+      fileContent = name + "\n\n\n";
+      currentFileName = 'معلوماتي تحديث رقم 1.txt';
+      oldQuestions = [];
+      goToPage('page-1-11');
     }
     
     function parseQuestionsFromFile() {
@@ -413,10 +425,10 @@
         if (!block) return;
         let ql = block.split("\n");
         oldQuestions.push({
-          questionNumber: (ql[1] || '').split(':')[1]?.trim() || '',
-          pageNumber: (ql[2] || '').split(':')[1]?.trim() || '',
-          difficulty: (ql[3] || '').split(':')[1]?.trim() || '',
-          note: (ql[5] || '').trim(),
+          questionNumber: (ql[1]||'').split(':')[1]?.trim()||'',
+          pageNumber:     (ql[2]||'').split(':')[1]?.trim()||'',
+          difficulty:     (ql[3]||'').split(':')[1]?.trim()||'',
+          note:           (ql[5]||'').trim(),
           fromFile: true
         });
       });
@@ -437,7 +449,7 @@ ${SEPARATOR}
       let header = fileContent.split("\n")[0];
       let combined = oldQuestions.concat(newQuestions);
       let newContent = header + "\n\n\n";
-      combined.forEach((q, i) => { newContent += formatQuestion(q, i + 1); });
+      combined.forEach((q, i) => { newContent += formatQuestion(q, i+1); });
       fileContent = newContent;
     }
     
@@ -483,7 +495,7 @@ ${SEPARATOR}
         let blk = document.createElement('div');
         blk.className = 'question-block';
         let h3 = document.createElement('h3');
-        h3.innerText = `رقم السؤال ${i + 1}`;
+        h3.innerText = `رقم السؤال ${i+1}`;
         blk.appendChild(h3);
         let cd = document.createElement('div');
         cd.id = `question-content-${i}`;
@@ -606,31 +618,16 @@ ${SEPARATOR}
     function saveSettings() { rebuildFileContent(); goToPage('page-4-0'); }
     function saveSettingsAndReturn() { rebuildFileContent(); goToPage('page-2-0'); }
     
-    // دالة التنزيل الخاصة بزر "تحميل على جهاز" في صفحة 4:0:
-    // تقوم بزيادة الرقم في downloadFileName بمقدار 1 عند كل ضغط
-    function downloadFileForDevice() {
-      if (downloadFileName === "") { 
-        alert("لم يتم تعيين اسم الملف للتنزيل."); 
-        return;
-      }
-      let regex = /معلوماتي تحديث رقم (\d+)/;
-      let match = downloadFileName.match(regex);
-      if (match) {
-        let newNum = parseInt(match[1]) + 1;
-        downloadFileName = `معلوماتي تحديث رقم ${newNum}.txt`;
-      } else {
-        // إذا لم يكن التنسيق صحيحاً، نستخدم currentFileName مع زيادة 1
-        let num = 1;
-        downloadFileName = currentFileName.replace(".txt", ` ${num+1}.txt`);
-      }
+    // دالة manualDownloadFile: الآن تستخدم currentFileName كما هو بدون زيادة، بحيث لا يتأثر بعملية الرفع
+    function manualDownloadFile() {
       let blob = new Blob([fileContent], { type: "text/plain" });
       let link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = downloadFileName;
+      link.download = currentFileName;
       link.click();
     }
     
-    // دالة تنزيل الملف الجديد باسم ثابت (اختياري)
+    // دالة downloadNewFile: تنزيل الملف باسم ثابت "معلوماتي تحديث رقم 1.txt"
     function downloadNewFile() {
       let fixedName = "معلوماتي تحديث رقم 1.txt";
       let blob = new Blob([fileContent], { type: "text/plain" });
@@ -638,37 +635,6 @@ ${SEPARATOR}
       link.href = URL.createObjectURL(blob);
       link.download = fixedName;
       link.click();
-    }
-    
-    // عند إنشاء الملف أو تحميله، نعين currentFileName و downloadFileName معًا
-    function setInitialFileName(name) {
-      currentFileName = name;
-      downloadFileName = name;
-      initialUploadedFileName = name;
-    }
-    
-    function handleNextFromCreateFile() {
-      let name = document.getElementById('userNameInput').value.trim();
-      if (!name) { alert('من فضلك ادخل اسمك'); return; }
-      fileContent = name + "\n\n\n";
-      setInitialFileName('معلوماتي تحديث رقم 1.txt');
-      oldQuestions = [];
-      goToPage('page-1-11');
-    }
-    
-    function handleManualFile(e) {
-      let file = e.target.files[0];
-      if (file) {
-        let reader = new FileReader();
-        reader.onload = function(ev) {
-          fileContent = ev.target.result;
-          setInitialFileName(file.name);
-          parseQuestionsFromFile();
-          document.getElementById('manualFileNameDisplay').innerText = file.name;
-          alert('تم تحميل الملف من جهازك: ' + file.name);
-        }
-        reader.readAsText(file);
-      }
     }
   </script>
 </body>
