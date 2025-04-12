@@ -144,7 +144,7 @@
       <!-- عرض اسم الملف الذي تم تحميله يدويًا -->
       <div id="manualFileNameDisplay"></div>
       
-      <!-- أزرار تنقل إضافية -->
+      <!-- أزرار التنقل -->
       <div style="margin-top:15px;">
         <button onclick="goToWorkPage()">صفحة واجهة العمل</button>
         <button onclick="goToPage('page-1-1')">إنشاء ملف جديد</button>
@@ -174,7 +174,7 @@
   <div id="page-1-11" class="page">
     <div class="container">
       <h1>رفع ملف txt الخاص بك إلى الخادم</h1>
-      <!-- زر رفع الملف المُعاد تسميته -->
+      <!-- زر رفع الملف (رفع الى الخادم) -->
       <button onclick="uploadFileAndGoBack()">رفع الى الخادم</button>
       <!-- زر تنزيل الملف الجديد -->
       <button onclick="downloadNewFile()">تنزيل الملف الجديد</button>
@@ -240,9 +240,9 @@
   <div id="page-4-0" class="page">
     <div class="container">
       <h1>رفع الملف النصي المعدل إلى الخادم</h1>
-      <!-- زر رفع الملف يرفع الملف ويحدث الاسم (يُحدث currentFileName) -->
+      <!-- زر رفع الملف: لا يعيد المستخدم إلى صفحة أخرى -->
       <button onclick="uploadFileAndGoBack()">رفع الى الخادم</button>
-      <!-- زر تنزيل الملف على الجهاز يستخدم اسم الملف الذي تم رفعه أول مرة -->
+      <!-- زر تنزيل الملف على الجهاز: يستخدم اسم الملف الذي تم رفعه في أول عملية رفع -->
       <button onclick="manualDownloadFile()">تحميل على جهاز</button>
     </div>
   </div>
@@ -285,11 +285,11 @@
     let undoStack = [];
     let redoStack = [];
     let selectedFiles = [];
-    // المتغير الجديد لتخزين اسم الملف الذي تم رفعه لأول مرة (لنظام التنزيل)
+    // متغير لتخزين اسم الملف الذي تم رفعه لأول مرة (لنظام التنزيل)
     let uploadedFileName = "";
 
     /*********************************************/
-    /* دوال التنقل بين الصفحات                   */
+    /* دوال التنقل بين الصفحات                     */
     /*********************************************/
     function goToPage(pageId) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -368,14 +368,12 @@
       goToPage('page-2-0');
     }
     
-    // دالة رفع الملف من صفحة 4:0: تقوم بتحديث currentFileName بالاسم الجديد (زيادة الرقم مرة واحدة)
-    // وتقوم بتعيين المتغير uploadedFileName إذا كان فارغاً (أي أول رفع)
+    // دالة رفع الملف من صفحة 4:0: يتم تحديث currentFileName وزيادة الرقم مرة واحدة، وتعيين uploadedFileName إذا كان فارغاً
     function uploadFileAndGoBack() {
       let regex = /معلوماتي تحديث رقم (\d+)/;
       let match = currentFileName.match(regex);
       let newFileName = match ? `معلوماتي تحديث رقم ${parseInt(match[1]) + 1}.txt` : 'معلوماتي تحديث رقم 1.txt';
       currentFileName = newFileName;
-      // إذا لم يكن uploadedFileName معينًا، قم بتعيينه بالاسم الجديد بعد أول رفع
       if(uploadedFileName === "") { uploadedFileName = newFileName; }
       fetch('/api/upload', {
         method: 'POST',
@@ -386,13 +384,13 @@
       .then(_ => {
         alert('تم رفع الملف إلى الخادم: ' + currentFileName);
         loadFilesList();
-        // يبقى المستخدم في صفحة 4:0 دون تغيير الصفحة
+        // يبقى المستخدم في نفس الصفحة (4:0)
       })
       .catch(err => console.error('Error uploading file:', err));
     }
     
     /**********************************************************/
-    /* نظام رفع الملف اليدوي من جهاز المستخدم (Local)      */
+    /* نظام رفع الملف اليدوي من جهاز المستخدم (Local)       */
     /**********************************************************/
     function manualLoadFile() { document.getElementById('manualFileInput').click(); }
     function handleManualFile(e) {
@@ -609,7 +607,8 @@ ${SEPARATOR}
       redoStack.push({ old: JSON.parse(JSON.stringify(oldQuestions)), new: JSON.parse(JSON.stringify(newQuestions)) });
       let prev = undoStack.pop();
       oldQuestions = prev.old; newQuestions = prev.new;
-      rebuildFileContent(); renderSettings();
+      rebuildFileContent();
+      renderSettings();
     }
     
     function redoChange() {
@@ -617,13 +616,14 @@ ${SEPARATOR}
       undoStack.push({ old: JSON.parse(JSON.stringify(oldQuestions)), new: JSON.parse(JSON.stringify(newQuestions)) });
       let nxt = redoStack.pop();
       oldQuestions = nxt.old; newQuestions = nxt.new;
-      rebuildFileContent(); renderSettings();
+      rebuildFileContent();
+      renderSettings();
     }
     
     function saveSettings() { rebuildFileContent(); goToPage('page-4-0'); }
     function saveSettingsAndReturn() { rebuildFileContent(); goToPage('page-2-0'); }
     
-    // دالة manualDownloadFile: تستخدم اسم الملف الموجود في uploadedFileName إذا كان محدداً، وإلا currentFileName
+    // دالة manualDownloadFile: تقوم بتنزيل الملف باستخدام اسم النسخة التي تم رفعها أولاً (uploadedFileName)
     function manualDownloadFile() {
       let downloadName = uploadedFileName !== "" ? uploadedFileName : currentFileName;
       let blob = new Blob([fileContent], { type: "text/plain" });
@@ -643,7 +643,7 @@ ${SEPARATOR}
       link.click();
     }
     
-    // متغير جديد لتخزين اسم الملف الذي تم رفعه لأول مرة
+    // المتغير لتخزين اسم الملف الذي تم رفعه لأول مرة
     let uploadedFileName = "";
   </script>
 </body>
