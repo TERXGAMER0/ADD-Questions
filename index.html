@@ -2,7 +2,7 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <!-- إضافة meta viewport لضبط التصميم على الجوال -->
+  <!-- ضبط العرض ليتناسب مع الأجهزة المحمولة -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>موقع تسجيل الأسئلة</title>
   <style>
@@ -26,21 +26,16 @@
     /* ============================= */
     /* Page Layout & Container       */
     /* ============================= */
-    .page {
-      width: 100%;
-      min-height: 100vh;
-      padding: 20px;
-      display: none;
-      align-items: center;
-      justify-content: center;
+    .page { 
+      width: 100%; 
+      min-height: 100vh; 
+      padding: 20px; 
+      display: none; 
+      align-items: center; 
+      justify-content: center; 
     }
     .active { display: flex; }
-    .container {
-      width: 100%;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
-    }
+    .container { width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; }
 
     /* ============================= */
     /* Form Controls & Buttons       */
@@ -79,9 +74,7 @@
       gap: 10px;
     }
     .half { width: 48%; }
-    @media (max-width:768px) {
-      .half { width: 100%; }
-    }
+    @media (max-width:768px) { .half { width: 100%; } }
 
     /* ============================= */
     /* Difficulty Buttons            */
@@ -126,27 +119,29 @@
       border-radius: 4px;
       color: #ffffff;
       text-align: center;
+      width: 100%;
+      max-width: 800px;
     }
   </style>
 </head>
 <body>
 
-  <!-- صفحة 1:0 - واجهة عرض الملفات من الخادم والخيارات اليدوية -->
+  <!-- صفحة 1:0 - واجهة عرض الملفات والخيارات اليدوية -->
   <div id="page-1-0" class="page active">
     <div class="container">
       <h1>واجهة ملفات النص من الخادم</h1>
       
-      <!-- زر عرض الملفات المحفوظة -->
+      <!-- زر عرض الملفات المحفوظة من الخادم -->
       <button onclick="loadFilesList()">عرض الملفات المحفوظة</button>
       
-      <!-- قائمة الملفات -->
+      <!-- منطقة عرض قائمة الملفات -->
       <div id="filesList" style="margin-top:10px;"></div>
       
-      <!-- زر تنزيل الملف من الجهاز (يدوي) -->
+      <!-- زر تنزيل الملف من الجهاز (نظام اليدوي) -->
       <button onclick="manualLoadFile()">تنزيل الملف من الجهاز</button>
       <input type="file" id="manualFileInput" accept=".txt" style="display:none" onchange="handleManualFile(event)">
       
-      <!-- عرض اسم الملف المحمّل يدويًا -->
+      <!-- عرض اسم الملف الذي تم تحميله يدويًا -->
       <div id="manualFileNameDisplay"></div>
       
       <!-- أزرار التنقل -->
@@ -179,7 +174,9 @@
   <div id="page-1-11" class="page">
     <div class="container">
       <h1>رفع ملف txt الخاص بك إلى الخادم</h1>
+      <!-- زر رفع الملف المُعاد تسميته -->
       <button onclick="uploadFileAndGoBack()">رفع الى الخادم</button>
+      <!-- زر تنزيل الملف الجديد -->
       <button onclick="downloadNewFile()">تنزيل الملف الجديد</button>
       <button onclick="goToPage('page-1-0')">رجوع</button>
     </div>
@@ -243,7 +240,9 @@
   <div id="page-4-0" class="page">
     <div class="container">
       <h1>رفع الملف النصي المعدل إلى الخادم</h1>
+      <!-- زر رفع الملف لا يعيد المستخدم بل يبقيه في نفس الصفحة -->
       <button onclick="uploadFileAndGoBack()">رفع الى الخادم</button>
+      <!-- زر تنزيل الملف مع زيادة الرقم -->
       <button onclick="manualDownloadFile()">تحميل على جهاز</button>
     </div>
   </div>
@@ -275,7 +274,7 @@
 
   <script>
     /*********************************************/
-    /* المتغيرات العامة والتعليقات              */
+    /* المتغيرات والتعليقات حول المتغيرات العامة */
     /*********************************************/
     let fileContent = "";
     let currentFileName = "";
@@ -288,7 +287,7 @@
     let selectedFiles = [];
 
     /*********************************************/
-    /* دوال التنقل بين الصفحات                   */
+    /* دوال التنقل بين الصفحات                     */
     /*********************************************/
     function goToPage(pageId) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -297,8 +296,8 @@
         let header = fileContent.split("\n")[0];
         document.getElementById('displayUserName').innerText = header || "اسم المستخدم";
       }
-      if (pageId === 'page-2-1') renderSettings();
-      if (pageId === 'page-3-0') updateNewQuestionsDisplay();
+      if (pageId === 'page-2-1') { renderSettings(); }
+      if (pageId === 'page-3-0') { updateNewQuestionsDisplay(); }
     }
     
     /**************************************************/
@@ -367,6 +366,7 @@
       goToPage('page-2-0');
     }
     
+    // عند رفع الملف من صفحة 4:0، يتم حساب اسم الملف الجديد ثم رفعه، دون تغيير الصفحة (يبقى في صفحة 4:0)
     function uploadFileAndGoBack() {
       let regex = /معلوماتي تحديث رقم (\d+)/;
       let match = currentFileName.match(regex);
@@ -381,13 +381,13 @@
       .then(_ => {
         alert('تم رفع الملف إلى الخادم: ' + currentFileName);
         loadFilesList();
-        goToPage('page-1-0');
+        // لا يتم إعادة التوجيه إلى صفحة 1:0؛ يبقى المستخدم في صفحة 4:0
       })
       .catch(err => console.error('Error uploading file:', err));
     }
     
     /**********************************************************/
-    /* نظام رفع الملف اليدوي من جهاز المستخدم (Local)      */
+    /* نظام رفع الملف اليدوي من جهاز المستخدم (Local)       */
     /**********************************************************/
     function manualLoadFile() { document.getElementById('manualFileInput').click(); }
     function handleManualFile(e) {
@@ -398,7 +398,6 @@
           fileContent = ev.target.result;
           currentFileName = file.name;
           parseQuestionsFromFile();
-          // عرض اسم الملف المُختار باللون الأبيض داخل المستطيل
           document.getElementById('manualFileNameDisplay').innerText = file.name;
           alert('تم تحميل الملف من جهازك: ' + file.name);
         };
@@ -486,10 +485,7 @@ ${SEPARATOR}
       });
     }
     
-    function saveQuestionsAndGoToDownload() {
-      rebuildFileContent();
-      goToPage('page-4-0');
-    }
+    function saveQuestionsAndGoToDownload() { rebuildFileContent(); goToPage('page-4-0'); }
     
     function renderSettings() {
       let c = document.getElementById('questionsList');
@@ -554,7 +550,8 @@ ${SEPARATOR}
       let options = ["سهل جدًا","سهل","متوسط جدًا","متوسط","صعب","صعب جدًا","شديد الصعوبة","مستحيل الحل فقط حفظ"];
       options.forEach(opt => {
         let o = document.createElement('option');
-        o.value = opt; o.text = opt;
+        o.value = opt;
+        o.text = opt;
         if(q.difficulty === opt) o.selected = true;
         selectDiff.appendChild(o);
       });
@@ -585,9 +582,9 @@ ${SEPARATOR}
     function saveEdit(i, newQN, newPN, newD, newN) {
       pushState();
       if(i < oldQuestions.length) {
-        Object.assign(oldQuestions[i], {questionNumber: newQN, pageNumber: newPN, difficulty: newD, note: newN});
+        Object.assign(oldQuestions[i], { questionNumber: newQN, pageNumber: newPN, difficulty: newD, note: newN });
       } else {
-        Object.assign(newQuestions[i - oldQuestions.length], {questionNumber: newQN, pageNumber: newPN, difficulty: newD, note: newN});
+        Object.assign(newQuestions[i - oldQuestions.length], { questionNumber: newQN, pageNumber: newPN, difficulty: newD, note: newN });
       }
       rebuildFileContent();
       renderSettings();
@@ -622,10 +619,14 @@ ${SEPARATOR}
     function saveSettingsAndReturn() { rebuildFileContent(); goToPage('page-2-0'); }
     
     function manualDownloadFile() {
+      // دالة تنزيل الملف اليدوي: تزيد الرقم بمقدار 1 قبل التنزيل
+      let regex = /معلوماتي تحديث رقم (\d+)/;
+      let match = currentFileName.match(regex);
+      let newName = match ? "معلوماتي تحديث رقم " + (parseInt(match[1]) + 1) + ".txt" : currentFileName;
       let blob = new Blob([fileContent], { type: "text/plain" });
       let link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = currentFileName;
+      link.download = newName;
       link.click();
     }
     
