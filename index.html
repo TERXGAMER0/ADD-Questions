@@ -2,7 +2,7 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <!-- ضبط العرض ليتناسب مع الأجهزة المحمولة -->
+  <!-- لضبط الصفحة لتناسب الأجهزة المحمولة -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>موقع تسجيل الأسئلة</title>
   <style>
@@ -240,9 +240,9 @@
   <div id="page-4-0" class="page">
     <div class="container">
       <h1>رفع الملف النصي المعدل إلى الخادم</h1>
-      <!-- زر رفع الملف لا يعيد المستخدم -->
+      <!-- زر رفع الملف: عند الضغط يتم حساب اسم جديد لعملية الرفع ويُحدث currentFileName -->
       <button onclick="uploadFileAndGoBack()">رفع الى الخادم</button>
-      <!-- زر تنزيل الملف: الآن يستخدم المتغير downloadFileName المنفصل -->
+      <!-- زر تنزيل الملف: يستخدم اسم الملف الأصلي (initial upload) المخزن في initialUploadedFileName -->
       <button onclick="downloadFileForDevice()">تحميل على جهاز</button>
     </div>
   </div>
@@ -285,8 +285,8 @@
     let undoStack = [];
     let redoStack = [];
     let selectedFiles = [];
-    // المتغير الخاص لتسمية التنزيل (منفصل عن الرفع)
-    let downloadFileName = "";
+    // المتغير لتخزين اسم الملف الذي تم رفعه أول مرة (لنظام التنزيل)
+    let initialUploadedFileName = "";
     
     /*********************************************/
     /* دوال التنقل بين الصفحات                   */
@@ -368,17 +368,33 @@
       goToPage('page-2-0');
     }
     
-    // عند إنشاء الملف (يدوي أو عبر واجهة الإنشاء) يتم تعيين currentFileName و downloadFileName معاً
-    function handleNextFromCreateFile() {
-      let name = document.getElementById('userNameInput').value.trim();
-      if(!name) { alert('من فضلك ادخل اسمك'); return; }
-      fileContent = name + "\n\n\n";
-      currentFileName = 'معلوماتي تحديث رقم 1.txt';
-      downloadFileName = currentFileName;
-      oldQuestions = [];
-      goToPage('page-1-11');
+    // دالة رفع الملف إلى الخادم: تحدث currentFileName فقط
+    // إذا لم يُحدد initialUploadedFileName، يتم تعيينه بعد أول رفع
+    function uploadFileAndGoBack() {
+      let regex = /معلوماتي تحديث رقم (\d+)/;
+      let match = currentFileName.match(regex);
+      let newFileName = match ? `معلوماتي تحديث رقم ${parseInt(match[1]) + 1}.txt` : 'معلوماتي تحديث رقم 1.txt';
+      currentFileName = newFileName;
+      if(initialUploadedFileName === "") {
+        initialUploadedFileName = newFileName;
+      }
+      fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: currentFileName, content: fileContent })
+      })
+      .then(r => r.json())
+      .then(_ => {
+        alert('تم رفع الملف إلى الخادم: ' + currentFileName);
+        loadFilesList();
+        // يبقى المستخدم في صفحة 4:0
+      })
+      .catch(err => console.error('Error uploading file:', err));
     }
     
+    /**********************************************************/
+    /* نظام رفع الملف اليدوي من جهاز المستخدم (Local)       */
+    /**********************************************************/
     function manualLoadFile() { document.getElementById('manualFileInput').click(); }
     function handleManualFile(e) {
       let file = e.target.files[0];
@@ -386,14 +402,26 @@
         let reader = new FileReader();
         reader.onload = function(ev) {
           fileContent = ev.target.result;
+          // عند تحميل ملف يدوي، نستخدم اسمه كـ currentFileName و initialUploadedFileName
           currentFileName = file.name;
-          downloadFileName = file.name;
+          initialUploadedFileName = file.name;
           parseQuestionsFromFile();
           document.getElementById('manualFileNameDisplay').innerText = file.name;
           alert('تم تحميل الملف من جهازك: ' + file.name);
         }
         reader.readAsText(file);
       }
+    }
+    
+    function handleNextFromCreateFile() {
+      let name = document.getElementById('userNameInput').value.trim();
+      if(!name) { alert('من فضلك ادخل اسمك'); return; }
+      fileContent = name + "\n\n\n";
+      // عند إنشاء الملف، نعين currentFileName و initialUploadedFileName بنفس القيمة
+      currentFileName = 'معلوماتي تحديث رقم 1.txt';
+      initialUploadedFileName = currentFileName;
+      oldQuestions = [];
+      goToPage('page-1-11');
     }
     
     function parseQuestionsFromFile() {
@@ -462,7 +490,7 @@ ${SEPARATOR}
       newQuestions.forEach((q, i) => {
         let div = document.createElement('div');
         div.style.marginBottom = '10px';
-        div.innerText = formatQuestion(q, oldQuestions.length+i+1);
+        div.innerText = formatQuestion(q, oldQuestions.length + i + 1);
         d.appendChild(div);
       });
     }
@@ -600,22 +628,20 @@ ${SEPARATOR}
     function saveSettings() { rebuildFileContent(); goToPage('page-4-0'); }
     function saveSettingsAndReturn() { rebuildFileContent(); goToPage('page-2-0'); }
     
-    // دالة التنزيل الخاصة بزر "تحميل على جهاز" تستخدم متغير downloadFileName المخصص للتنزيل
+    // دالة تنزيل الملف على الجهاز: تستخدم initialUploadedFileName لتكون قيمة التنزيل ثابتة كما في أول رفع
     function downloadFileForDevice() {
-      // زيادة downloadFileName بمقدار 1 دون التأثير على currentFileName
-      let regex = /معلوماتي تحديث رقم (\d+)/;
-      let match = downloadFileName.match(regex);
-      let newDownloadName = match ? `معلوماتي تحديث رقم ${parseInt(match[1]) + 1}.txt` : downloadFileName;
-      // تحديث downloadFileName بالاسم الجديد
-      downloadFileName = newDownloadName;
+      if(initialUploadedFileName === "") {
+        alert("لم يتم رفع الملف بعد.");
+        return;
+      }
       let blob = new Blob([fileContent], { type: "text/plain" });
       let link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = downloadFileName;
+      link.download = initialUploadedFileName;
       link.click();
     }
     
-    // دالة downloadNewFile: تنزيل الملف باسم ثابت "معلوماتي تحديث رقم 1.txt"
+    // دالة تنزيل الملف الجديد باسم ثابت (اختياري)
     function downloadNewFile() {
       let fixedName = "معلوماتي تحديث رقم 1.txt";
       let blob = new Blob([fileContent], { type: "text/plain" });
@@ -625,17 +651,12 @@ ${SEPARATOR}
       link.click();
     }
     
-    // تعيين downloadFileName عند إنشاء/تحميل الملف
-    // عند إنشاء الملف أو تحميله يدويًا، نضبط downloadFileName بنفس currentFileName
-    downloadFileName = "";
-    
-    // عند تحميل الملف أو إنشاءه للمرة الأولى، يجب تعيين
+    // عند تحميل الملف أو إنشاءه، نعين initialUploadedFileName بنفس currentFileName
     function setInitialFileName(name) {
       currentFileName = name;
-      downloadFileName = name;
+      initialUploadedFileName = name;
     }
     
-    // في handleNextFromCreateFile و handleManualFile نستخدم setInitialFileName
     function handleNextFromCreateFile() {
       let name = document.getElementById('userNameInput').value.trim();
       if(!name) { alert('من فضلك ادخل اسمك'); return; }
