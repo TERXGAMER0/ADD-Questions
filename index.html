@@ -2,7 +2,7 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <!-- لضبط الصفحة لتناسب الأجهزة المحمولة -->
+  <!-- ضبط العرض ليتناسب مع الأجهزة المحمولة -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>موقع تسجيل الأسئلة</title>
   <style>
@@ -240,9 +240,9 @@
   <div id="page-4-0" class="page">
     <div class="container">
       <h1>رفع الملف النصي المعدل إلى الخادم</h1>
-      <!-- زر رفع الملف: عند الضغط يتم حساب اسم جديد لعملية الرفع ويُحدث currentFileName -->
+      <!-- زر رفع الملف: يقوم بتحديث currentFileName فقط، ولا يُحدث downloadFileName -->
       <button onclick="uploadFileAndGoBack()">رفع الى الخادم</button>
-      <!-- زر تنزيل الملف: يستخدم اسم الملف الأصلي (initial upload) المخزن في initialUploadedFileName -->
+      <!-- زر تنزيل الملف: يستخدم downloadFileName ويزيده بمقدار 1 عند كل ضغط -->
       <button onclick="downloadFileForDevice()">تحميل على جهاز</button>
     </div>
   </div>
@@ -285,9 +285,11 @@
     let undoStack = [];
     let redoStack = [];
     let selectedFiles = [];
-    // المتغير لتخزين اسم الملف الذي تم رفعه أول مرة (لنظام التنزيل)
+    // متغير لتخزين الاسم الأصلي للملف عند أول رفع (يستخدم للتنزيل)
     let initialUploadedFileName = "";
-    
+    // متغير لتخزين اسم التنزيل الحالي (لزر "تحميل على جهاز")، يتم تحديثه عند كل ضغط
+    let downloadFileName = "";
+
     /*********************************************/
     /* دوال التنقل بين الصفحات                   */
     /*********************************************/
@@ -318,7 +320,7 @@
             btn.innerText = f;
             btn.style.marginBottom = '5px';
             btn.onclick = () => {
-              if(selectedFiles.includes(f)) {
+              if (selectedFiles.includes(f)) {
                 selectedFiles = selectedFiles.filter(x => x !== f);
                 btn.style.backgroundColor = '#1f1f1f';
               } else {
@@ -333,7 +335,7 @@
     }
     
     function downloadSelectedFiles() {
-      if(selectedFiles.length === 0) { alert('لم يتم اختيار أي ملفات.'); return; }
+      if (selectedFiles.length === 0) { alert('لم يتم اختيار أي ملفات.'); return; }
       selectedFiles.forEach(f => {
         fetch('/api/file?name=' + encodeURIComponent(f))
           .then(r => r.text())
@@ -362,49 +364,36 @@
     
     function goToWorkPage() {
       let manual = document.getElementById('manualFileNameDisplay').innerText.trim();
-      if(manual !== '') { goToPage('page-2-0'); return; }
-      if(selectedFiles.length !== 1) { alert('يجب عليك اختيار ملف واحد فقط وليس عدة ملفات.'); return; }
-      if(currentFileName !== selectedFiles[0]) selectFile(selectedFiles[0]);
+      if (manual !== '') { goToPage('page-2-0'); return; }
+      if (selectedFiles.length !== 1) { alert('يجب عليك اختيار ملف واحد فقط وليس عدة ملفات.'); return; }
+      if (currentFileName !== selectedFiles[0]) selectFile(selectedFiles[0]);
       goToPage('page-2-0');
     }
     
-    // دالة رفع الملف إلى الخادم: تحدث currentFileName فقط
-    // إذا لم يُحدد initialUploadedFileName، يتم تعيينه بعد أول رفع
-    function uploadFileAndGoBack() {
-      let regex = /معلوماتي تحديث رقم (\d+)/;
-      let match = currentFileName.match(regex);
-      let newFileName = match ? `معلوماتي تحديث رقم ${parseInt(match[1]) + 1}.txt` : 'معلوماتي تحديث رقم 1.txt';
-      currentFileName = newFileName;
-      if(initialUploadedFileName === "") {
-        initialUploadedFileName = newFileName;
-      }
-      fetch('/api/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: currentFileName, content: fileContent })
-      })
-      .then(r => r.json())
-      .then(_ => {
-        alert('تم رفع الملف إلى الخادم: ' + currentFileName);
-        loadFilesList();
-        // يبقى المستخدم في صفحة 4:0
-      })
-      .catch(err => console.error('Error uploading file:', err));
+    // دالة إنشاء الملف (عند الإنشاء اليدوي أو عن طريق التحميل)؛ يتم تعيين currentFileName و downloadFileName معًا
+    function setInitialFileName(name) {
+      currentFileName = name;
+      initialUploadedFileName = name;
+      downloadFileName = name;
     }
     
-    /**********************************************************/
-    /* نظام رفع الملف اليدوي من جهاز المستخدم (Local)       */
-    /**********************************************************/
+    function handleNextFromCreateFile() {
+      let name = document.getElementById('userNameInput').value.trim();
+      if (!name) { alert('من فضلك ادخل اسمك'); return; }
+      fileContent = name + "\n\n\n";
+      setInitialFileName('معلوماتي تحديث رقم 1.txt');
+      oldQuestions = [];
+      goToPage('page-1-11');
+    }
+    
     function manualLoadFile() { document.getElementById('manualFileInput').click(); }
     function handleManualFile(e) {
       let file = e.target.files[0];
-      if(file) {
+      if (file) {
         let reader = new FileReader();
         reader.onload = function(ev) {
           fileContent = ev.target.result;
-          // عند تحميل ملف يدوي، نستخدم اسمه كـ currentFileName و initialUploadedFileName
-          currentFileName = file.name;
-          initialUploadedFileName = file.name;
+          setInitialFileName(file.name);
           parseQuestionsFromFile();
           document.getElementById('manualFileNameDisplay').innerText = file.name;
           alert('تم تحميل الملف من جهازك: ' + file.name);
@@ -413,32 +402,21 @@
       }
     }
     
-    function handleNextFromCreateFile() {
-      let name = document.getElementById('userNameInput').value.trim();
-      if(!name) { alert('من فضلك ادخل اسمك'); return; }
-      fileContent = name + "\n\n\n";
-      // عند إنشاء الملف، نعين currentFileName و initialUploadedFileName بنفس القيمة
-      currentFileName = 'معلوماتي تحديث رقم 1.txt';
-      initialUploadedFileName = currentFileName;
-      oldQuestions = [];
-      goToPage('page-1-11');
-    }
-    
     function parseQuestionsFromFile() {
       oldQuestions = [];
       let lines = fileContent.split("\n");
       let header = lines[0];
       let questionsText = fileContent.substring(fileContent.indexOf(header) + header.length).trim();
-      if(!questionsText) return;
+      if (!questionsText) return;
       questionsText.split(SEPARATOR).forEach(part => {
         let block = part.trim();
-        if(!block) return;
+        if (!block) return;
         let ql = block.split("\n");
         oldQuestions.push({
-          questionNumber: (ql[1]||'').split(':')[1]?.trim()||'',
-          pageNumber:     (ql[2]||'').split(':')[1]?.trim()||'',
-          difficulty:     (ql[3]||'').split(':')[1]?.trim()||'',
-          note:           (ql[5]||'').trim(),
+          questionNumber: (ql[1] || '').split(':')[1]?.trim() || '',
+          pageNumber: (ql[2] || '').split(':')[1]?.trim() || '',
+          difficulty: (ql[3] || '').split(':')[1]?.trim() || '',
+          note: (ql[5] || '').trim(),
           fromFile: true
         });
       });
@@ -459,7 +437,7 @@ ${SEPARATOR}
       let header = fileContent.split("\n")[0];
       let combined = oldQuestions.concat(newQuestions);
       let newContent = header + "\n\n\n";
-      combined.forEach((q, i) => { newContent += formatQuestion(q, i+1); });
+      combined.forEach((q, i) => { newContent += formatQuestion(q, i + 1); });
       fileContent = newContent;
     }
     
@@ -473,7 +451,7 @@ ${SEPARATOR}
       let p = document.getElementById('pageNumberInput').value.trim();
       let qn = document.getElementById('questionNumberInput').value.trim();
       let nt = document.getElementById('noteInput').value.trim();
-      if(!p || !qn || !selectedDifficulty) { alert('من فضلك اكمل البيانات المطلوبة بما في ذلك صعوبة السؤال'); return; }
+      if (!p || !qn || !selectedDifficulty) { alert('من فضلك اكمل البيانات المطلوبة بما في ذلك صعوبة السؤال'); return; }
       newQuestions.push({ questionNumber: qn, pageNumber: p, difficulty: selectedDifficulty, note: nt, fromFile: false });
       rebuildFileContent();
       updateNewQuestionsDisplay();
@@ -505,7 +483,7 @@ ${SEPARATOR}
         let blk = document.createElement('div');
         blk.className = 'question-block';
         let h3 = document.createElement('h3');
-        h3.innerText = `رقم السؤال ${i+1}`;
+        h3.innerText = `رقم السؤال ${i + 1}`;
         blk.appendChild(h3);
         let cd = document.createElement('div');
         cd.id = `question-content-${i}`;
@@ -562,7 +540,7 @@ ${SEPARATOR}
         let o = document.createElement('option');
         o.value = opt;
         o.text = opt;
-        if(q.difficulty === opt) o.selected = true;
+        if (q.difficulty === opt) o.selected = true;
         selectDiff.appendChild(o);
       });
       form.appendChild(selectDiff);
@@ -591,7 +569,7 @@ ${SEPARATOR}
     
     function saveEdit(i, newQN, newPN, newD, newN) {
       pushState();
-      if(i < oldQuestions.length) {
+      if (i < oldQuestions.length) {
         Object.assign(oldQuestions[i], { questionNumber: newQN, pageNumber: newPN, difficulty: newD, note: newN });
       } else {
         Object.assign(newQuestions[i - oldQuestions.length], { questionNumber: newQN, pageNumber: newPN, difficulty: newD, note: newN });
@@ -601,16 +579,16 @@ ${SEPARATOR}
     }
     
     function deleteQuestion(i) {
-      if(!confirm(`هل انت متأكد بحذف سؤال رقم ${i+1}؟`)) return;
+      if (!confirm(`هل انت متأكد بحذف سؤال رقم ${i+1}؟`)) return;
       pushState();
-      if(i < oldQuestions.length) oldQuestions.splice(i, 1);
+      if (i < oldQuestions.length) oldQuestions.splice(i, 1);
       else newQuestions.splice(i - oldQuestions.length, 1);
       rebuildFileContent();
       renderSettings();
     }
     
     function undoChange() {
-      if(!undoStack.length) { alert('لا يوجد شيء للتراجع عنه.'); return; }
+      if (!undoStack.length) { alert('لا يوجد شيء للتراجع عنه.'); return; }
       redoStack.push({ old: JSON.parse(JSON.stringify(oldQuestions)), new: JSON.parse(JSON.stringify(newQuestions)) });
       let prev = undoStack.pop();
       oldQuestions = prev.old; newQuestions = prev.new;
@@ -618,7 +596,7 @@ ${SEPARATOR}
     }
     
     function redoChange() {
-      if(!redoStack.length) { alert('لا يوجد شيء للتقدم إليه.'); return; }
+      if (!redoStack.length) { alert('لا يوجد شيء للتقدم إليه.'); return; }
       undoStack.push({ old: JSON.parse(JSON.stringify(oldQuestions)), new: JSON.parse(JSON.stringify(newQuestions)) });
       let nxt = redoStack.pop();
       oldQuestions = nxt.old; newQuestions = nxt.new;
@@ -628,16 +606,27 @@ ${SEPARATOR}
     function saveSettings() { rebuildFileContent(); goToPage('page-4-0'); }
     function saveSettingsAndReturn() { rebuildFileContent(); goToPage('page-2-0'); }
     
-    // دالة تنزيل الملف على الجهاز: تستخدم initialUploadedFileName لتكون قيمة التنزيل ثابتة كما في أول رفع
+    // دالة التنزيل الخاصة بزر "تحميل على جهاز" في صفحة 4:0:
+    // تقوم بزيادة الرقم في downloadFileName بمقدار 1 عند كل ضغط
     function downloadFileForDevice() {
-      if(initialUploadedFileName === "") {
-        alert("لم يتم رفع الملف بعد.");
+      if (downloadFileName === "") { 
+        alert("لم يتم تعيين اسم الملف للتنزيل."); 
         return;
+      }
+      let regex = /معلوماتي تحديث رقم (\d+)/;
+      let match = downloadFileName.match(regex);
+      if (match) {
+        let newNum = parseInt(match[1]) + 1;
+        downloadFileName = `معلوماتي تحديث رقم ${newNum}.txt`;
+      } else {
+        // إذا لم يكن التنسيق صحيحاً، نستخدم currentFileName مع زيادة 1
+        let num = 1;
+        downloadFileName = currentFileName.replace(".txt", ` ${num+1}.txt`);
       }
       let blob = new Blob([fileContent], { type: "text/plain" });
       let link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = initialUploadedFileName;
+      link.download = downloadFileName;
       link.click();
     }
     
@@ -651,15 +640,16 @@ ${SEPARATOR}
       link.click();
     }
     
-    // عند تحميل الملف أو إنشاءه، نعين initialUploadedFileName بنفس currentFileName
+    // عند إنشاء الملف أو تحميله، نعين currentFileName و downloadFileName معًا
     function setInitialFileName(name) {
       currentFileName = name;
+      downloadFileName = name;
       initialUploadedFileName = name;
     }
     
     function handleNextFromCreateFile() {
       let name = document.getElementById('userNameInput').value.trim();
-      if(!name) { alert('من فضلك ادخل اسمك'); return; }
+      if (!name) { alert('من فضلك ادخل اسمك'); return; }
       fileContent = name + "\n\n\n";
       setInitialFileName('معلوماتي تحديث رقم 1.txt');
       oldQuestions = [];
@@ -668,7 +658,7 @@ ${SEPARATOR}
     
     function handleManualFile(e) {
       let file = e.target.files[0];
-      if(file) {
+      if (file) {
         let reader = new FileReader();
         reader.onload = function(ev) {
           fileContent = ev.target.result;
